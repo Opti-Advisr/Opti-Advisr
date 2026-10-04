@@ -1,0 +1,7 @@
+.env
+*.tfvars
+.terraform/
+*.zip
+__pycache__/
+*.pyc
+.DS_Store
