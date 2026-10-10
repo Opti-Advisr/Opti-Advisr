@@ -1,4 +1,4 @@
-# Opti Advisr — AWS Cost Console (Recreated)
+# Opti Advisr
 
 A React.js recreation of the Opti Advisr AWS cost optimization dashboard.
 
