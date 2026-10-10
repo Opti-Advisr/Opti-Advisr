@@ -36,3 +36,5 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+worker-configuration.d.ts
