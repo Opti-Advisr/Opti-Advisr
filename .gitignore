@@ -1,12 +1,38 @@
+# Environment & secrets
 .env
+.env.local
+.env.production
+**/.env.*
+!**/.env.example
 *.tfvars
+*.tfvars.json
+
+# Terraform
 .terraform/
-*.zip
+terraform.tfstate
+terraform.tfstate.backup
+.terraform.lock.hcl
+tfplan
+
+# Python
 __pycache__/
 *.pyc
-.DS_Store
+*.pyo
+.venv/
 
-# React frontend
-frontend/node_modules/
-frontend/dist/
-frontend/.env
+# Node
+node_modules/
+dist/
+
+# Lambda packages (rebuild from source)
+*.zip
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

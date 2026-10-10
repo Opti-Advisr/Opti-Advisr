@@ -1339,19 +1339,68 @@ export default function Home() {
     document.documentElement.classList.toggle("dark", darkMode);
   }, [darkMode]);
 
-  // Initial load with API attempt, fallback to demo data
   useEffect(() => {
-    apiGet("/metrics/spend")
-      .then((data) => data && setMetrics(data))
+    apiPost("/costs", { period: "monthly", metric: "cost" })
+      .then((data) => {
+        const amount = Number(data?.amount);
+        if (!Number.isFinite(amount)) return;
+
+        setMetrics((current) => ({
+          ...current,
+          total_spend: amount,
+          daily_average: amount / new Date().getDate(),
+        }));
+
+        if (Array.isArray(data.services)) {
+          const liveServices = data.services.map((item) => ({
+            service: item.service,
+            cost: Number(item.amount) || 0,
+            share: amount > 0 ? ((Number(item.amount) || 0) / amount) * 100 : 0,
+            trend: [],
+          }));
+          setServices(liveServices);
+        }
+      })
       .catch(() => {});
-    apiGet("/metrics/trend")
-      .then((data) => data && setTrend(data))
-      .catch(() => {});
-    apiGet("/metrics/services")
-      .then((data) => data && setServices(data))
-      .catch(() => {});
+
     apiGet("/resources")
-      .then((data) => data && setResources(data))
+      .then((data) => {
+        const groups = data?.resources;
+        if (!groups || typeof groups !== "object") return;
+
+        const liveResources = [
+          ...(groups.instances || []).map((item) => ({
+            id: item.id,
+            resource_id: item.id,
+            name:
+              item.tags?.find((tag) => tag.Key === "Name")?.Value || item.id,
+            kind: "EC2",
+            size: item.type,
+            state: item.state,
+            monthly_savings: 0,
+          })),
+          ...(groups.databases || []).map((item) => ({
+            id: item.id,
+            resource_id: item.id,
+            name: item.id,
+            kind: "RDS",
+            size: item.class,
+            state: item.status,
+            monthly_savings: 0,
+          })),
+          ...(groups.buckets || []).map((item) => ({
+            id: item.name,
+            resource_id: item.name,
+            name: item.name,
+            kind: "S3",
+            size: "AWS storage",
+            state: "available",
+            monthly_savings: 0,
+          })),
+        ];
+
+        setResources(liveResources);
+      })
       .catch(() => {});
   }, []);
 
@@ -1384,8 +1433,14 @@ export default function Home() {
     setIsTyping(true);
 
     try {
-      const res = await apiPost("/advisor/chat", { prompt });
-      setMessages((curr) => [...curr, { role: "advisor", content: res.reply }]);
+      const res = await apiPost("/agent", { prompt });
+      const reply =
+        res?.reply ||
+        (Array.isArray(res?.recommendations) && res.recommendations.length
+          ? res.recommendations.join("\n")
+          : null);
+      if (!reply) throw new Error("Advisor response did not include advice");
+      setMessages((curr) => [...curr, { role: "advisor", content: reply }]);
     } catch (err) {
       setTimeout(() => {
         let simulatedReply =

@@ -9,30 +9,30 @@ export class ApiError extends Error {
 
 const configuredApiUrl = (import.meta.env.VITE_API_URL || "")?.replace(/\/$/, "");
 const BASE = configuredApiUrl || "/api";
-const API_KEY = import.meta.env.VITE_API_KEY || "opti-advisr-demo";
+const API_KEY = import.meta.env.VITE_API_KEY || "";
 
 async function request(method, path, body) {
-  try {
-    const res = await fetch(`${BASE}${path}`, {
-      method,
-      headers: {
-        "x-api-key": API_KEY,
-        ...(body === undefined ? {} : { "Content-Type": "application/json" }),
-      },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => null);
-      throw new ApiError(res.status, errBody);
-    }
-
-    if (res.status === 204) return undefined;
-    return await res.json();
-  } catch (err) {
-    // Return null or reject to allow graceful fallback to demo mock data
-    throw err;
+  const headers = {};
+  if (body !== undefined) {
+    headers["Content-Type"] = "application/json";
   }
+  if (API_KEY) {
+    headers["x-api-key"] = API_KEY;
+  }
+
+  const res = await fetch(`${BASE}${path}`, {
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => null);
+    throw new ApiError(res.status, errBody);
+  }
+
+  if (res.status === 204) return undefined;
+  return await res.json();
 }
 
 export const apiGet = (path) => request("GET", path);

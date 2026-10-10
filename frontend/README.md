@@ -1,80 +1,35 @@
-# Opti Advisr
+# Opti Advisr frontend
 
-A React.js recreation of the Opti Advisr AWS cost optimization dashboard.
+React 19 and Vite frontend for the Opti Advisr AWS cost console.
 
-## Tech Stack
+## Run locally
 
-- React 19
-- Vite 6
-- React Router
-- Recharts (charts)
-- Lucide React (icons)
-- Sonner (toast notifications)
-- Custom CSS (no Tailwind)
+1. Copy `.env.example` to `.env.local`.
+2. Set `API_BASE_URL` and `API_KEY` in `.env.local`.
+3. Install dependencies and start Vite:
 
-## Getting Started
+   ```powershell
+   npm ci
+   npm run dev
+   ```
 
-```bash
-npm install
-npm run dev
-```
+Open the local URL printed by Vite (normally `http://localhost:5173`).
 
-## Build for Production
+The Vite development server proxies `/api` requests to API Gateway and adds
+`API_KEY` server-side. The key is not included in the browser bundle. Do not
+prefix it with `VITE_`.
 
-```bash
+The dashboard uses the existing `/costs`, `/resources`, and `/agent` API
+routes. Views that the backend does not currently provide retain the supplied
+demo data.
+
+## Build
+
+```powershell
 npm run build
 npm run preview
 ```
 
-## Project Structure
-
-```
-aws-optimizer-recreated/
-├── package.json
-├── index.html
-├── vite.config.js
-├── README.md
-└── src/
-    ├── main.jsx
-    ├── App.jsx
-    ├── pages/
-    │   └── Home.jsx
-    ├── components/
-    │   ├── Sidebar.jsx
-    │   ├── Topbar.jsx
-    │   ├── Dashboard.jsx
-    │   ├── MetricCard.jsx
-    │   ├── SpendTrendCard.jsx
-    │   ├── WeekdayCard.jsx
-    │   ├── SavingsCard.jsx
-    │   ├── ForecastCard.jsx
-    │   ├── ResourcesSummary.jsx
-    │   ├── ServicesTable.jsx
-    │   ├── AdvisorCard.jsx
-    │   ├── ResourcesView.jsx
-    │   ├── AdvisorView.jsx
-    │   ├── WidgetDrawer.jsx
-    │   ├── TerminateModal.jsx
-    │   └── PlaceholderView.jsx
-    ├── styles/
-    │   └── index.css
-    └── utils/
-        └── demoData.js
-```
-
-## Features
-
-- Dashboard with spend metrics, trends, and charts
-- Resource management (EC2, RDS, S3)
-- AI Cost Advisor chat interface
-- Widget drawer for dashboard customization
-- Dark/light theme toggle
-- CSV export
-- Responsive sidebar with collapse/expand
-- Toast notifications
-
-## Notes
-
-- Uses demo/mock data (no backend required)
-- The API calls fall back to demo data when unavailable
-- The AI Advisor provides simulated responses
+The development proxy is not included in the production build. A production
+deployment needs a server-side API proxy or another authentication mechanism;
+do not embed an API Gateway key in client-side environment variables.
