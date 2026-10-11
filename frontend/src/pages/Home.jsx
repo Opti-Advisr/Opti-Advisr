@@ -87,7 +87,14 @@ function LogoMark() {
   );
 }
 
-function DemoBadge() {
+function DemoBadge({ isLive = false }) {
+  if (isLive) {
+    return (
+      <span className="demo-badge" style={{ borderColor: 'rgba(16, 185, 129, 0.4)', color: '#10b981', background: 'rgba(16, 185, 129, 0.08)' }} data-testid="live-data-badge">
+        <span className="demo-dot" style={{ background: '#10b981' }} /> Live AWS Connected
+      </span>
+    );
+  }
   return (
     <span className="demo-badge" data-testid="demo-data-badge">
       <span className="demo-dot" /> Demo data
@@ -209,10 +216,10 @@ function Sidebar({ activeView, onNavigate, collapsed, onToggle }) {
         </div>
       </div>
       <div className="sidebar-profile" data-testid="sidebar-profile">
-        <div className="avatar avatar-blue">JD</div>
+        <div className="avatar avatar-blue">OA</div>
         <div className="sidebar-label">
-          <strong>Jordan Davis</strong>
-          <span>Admin workspace</span>
+          <strong>Opti Advisr Team</strong>
+          <span>AWS Workspace (ap-south-1)</span>
         </div>
         <MoreHorizontal size={15} />
       </div>
@@ -293,7 +300,7 @@ function Topbar({ onOpenWidgets, darkMode, onToggleTheme, onSearch }) {
           <i />
         </button>
         <div className="avatar avatar-blue top-avatar" data-testid="user-avatar">
-          JD
+          OA
         </div>
       </div>
     </header>
@@ -327,7 +334,8 @@ function MetricCard({ label, value, detail, badge, icon: Icon, tone = "blue", te
   );
 }
 
-function SpendTrendCard({ trend }) {
+function SpendTrendCard({ trend, totalSpend }) {
+  const currentTotal = totalSpend !== undefined ? totalSpend : 26.48;
   return (
     <Card className="trend-card" testId="spend-trend-card">
       <SectionHeading
@@ -348,9 +356,9 @@ function SpendTrendCard({ trend }) {
       />
       <div className="trend-summary">
         <div>
-          <strong>$26.48</strong>
+          <strong>{formatUsd(currentTotal)}</strong>
           <span className="positive-text">
-            <ArrowUpRight size={14} /> 12.0% vs. prior period
+            <ArrowUpRight size={14} /> Month-to-date (AWS)
           </span>
         </div>
         <button
@@ -613,14 +621,14 @@ function ForecastCard({ trend, metrics }) {
   );
 }
 
-function ResourcesSummary({ metrics }) {
-  const total = 6;
+function ResourcesSummary({ metrics, onNavigate }) {
+  const total = metrics.resource_summary.reduce((acc, item) => acc + item.count, 0) || 1;
   return (
     <Card className="resource-summary-card" testId="resources-summary-card">
       <SectionHeading
         title="Resources"
         action={
-          <button className="text-link" data-testid="view-all-resources-button">
+          <button className="text-link" onClick={() => onNavigate && onNavigate("resources")} data-testid="view-all-resources-button">
             View all <ArrowUpRight size={13} />
           </button>
         }
@@ -713,7 +721,7 @@ function ServicesTable({ services }) {
   );
 }
 
-function AdvisorCard({ onAsk }) {
+function AdvisorCard({ onAsk, onNavigate }) {
   const [prompt, setPrompt] = useState("");
   const submit = () => {
     if (!prompt.trim()) return;
@@ -731,14 +739,13 @@ function AdvisorCard({ onAsk }) {
       </div>
       <div className="advisor-exchange">
         <div className="user-question">
-          <div className="avatar avatar-light">JD</div>
+          <div className="avatar avatar-light">OA</div>
           <span>Which resources can I stop?</span>
         </div>
         <div className="advisor-answer">
           <Orb small />
           <p>
-            <strong>demo-server (t3.micro)</strong> averaged 1.8% CPU over 7 days. You could save{" "}
-            <strong>$6.30/mo</strong> by stopping it.
+            Connected to <strong>AI Agent (Lambda)</strong>. Ask about right-sizing, idle resources, or AWS budgets.
           </p>
         </div>
       </div>
@@ -759,57 +766,57 @@ function AdvisorCard({ onAsk }) {
           <Send size={15} />
         </button>
       </div>
-      <button className="advisor-open-link" data-testid="open-advisor-view-button">
+      <button className="advisor-open-link" onClick={() => onNavigate && onNavigate("advisor")} data-testid="open-advisor-view-button">
         Open full advisor <ExternalLink size={12} />
       </button>
     </Card>
   );
 }
 
-function Dashboard({ metrics, trend, services, onAsk, showForecast }) {
+function Dashboard({ metrics, trend, services, onAsk, showForecast, isLive, onNavigate }) {
   return (
     <div className="page-stack" data-testid="dashboard-view">
       <div className="page-intro">
         <div>
           <p className="eyebrow">OVERVIEW / OCTOBER 2026</p>
           <h1 data-testid="dashboard-title">
-            Good morning, Jordan <span className="wave">✦</span>
+            Cloud Cost Dashboard <span className="wave">✦</span>
           </h1>
-          <p className="page-subtitle">Here’s what’s happening with your cloud spend this week.</p>
+          <p className="page-subtitle">Here’s what’s happening with your cloud spend across AWS services.</p>
         </div>
-        <DemoBadge />
+        <DemoBadge isLive={isLive} />
       </div>
       <div className="metrics-grid">
         <MetricCard
           label="Total Spend"
-          value="$26.48"
-          badge="+12.0%"
-          detail="vs. prior 7 days"
+          value={formatUsd(metrics.total_spend)}
+          badge="+0.0%"
+          detail="Month-to-date (AWS)"
           icon={Activity}
           tone="blue"
           testId="total-spend-metric"
         />
         <MetricCard
           label="Top Service"
-          value="$14.62"
-          badge="55.2%"
-          detail="EC2 Compute"
+          value={formatUsd(metrics.top_service_cost)}
+          badge={`${Math.round(metrics.top_service_share)}%`}
+          detail={metrics.top_service_name}
           icon={Cloud}
           tone="purple"
           testId="top-service-metric"
         />
         <MetricCard
           label="Daily Average"
-          value="$1.89"
-          detail="across 7 days"
+          value={formatUsd(metrics.daily_average)}
+          detail="across current month"
           icon={TrendingUp}
           tone="green"
           testId="daily-average-metric"
         />
         <MetricCard
           label="Idle Candidates"
-          value="1"
-          badge="~$6.30/mo"
+          value={metrics.idle_candidates.toString()}
+          badge={`~${formatUsd(metrics.idle_savings)}/mo`}
           detail="savings found"
           icon={AlertTriangle}
           tone="orange"
@@ -817,7 +824,7 @@ function Dashboard({ metrics, trend, services, onAsk, showForecast }) {
         />
       </div>
       <div className="dashboard-grid dashboard-grid-top">
-        <SpendTrendCard trend={trend} />
+        <SpendTrendCard trend={trend} totalSpend={metrics.total_spend} />
         <div className="dashboard-side-stack">
           <WeekdayCard metrics={metrics} />
           <SavingsCard metrics={metrics} />
@@ -826,10 +833,10 @@ function Dashboard({ metrics, trend, services, onAsk, showForecast }) {
       {showForecast && <ForecastCard trend={trend} metrics={metrics} />}
       <div className="dashboard-grid dashboard-grid-bottom">
         <div className="left-stack">
-          <ResourcesSummary metrics={metrics} />
+          <ResourcesSummary metrics={metrics} onNavigate={onNavigate} />
           <ServicesTable services={services} />
         </div>
-        <AdvisorCard onAsk={onAsk} />
+        <AdvisorCard onAsk={onAsk} onNavigate={onNavigate} />
       </div>
     </div>
   );
@@ -839,7 +846,7 @@ function stateLabel(state) {
   return state === "available" ? "Available" : state.charAt(0).toUpperCase() + state.slice(1);
 }
 
-function ResourcesView({ resources, onStateChange, onTerminate }) {
+function ResourcesView({ resources, onStateChange, onTerminate, isLive }) {
   const [tab, setTab] = useState("EC2");
   const filtered = resources.filter((resource) => resource.kind === tab);
   return (
@@ -849,10 +856,10 @@ function ResourcesView({ resources, onStateChange, onTerminate }) {
           <p className="eyebrow">WORKSPACE / INVENTORY</p>
           <h1 data-testid="resources-title">Resources</h1>
           <p className="page-subtitle">
-            Review your AWS footprint and take action on idle infrastructure.
+            Review your AWS footprint and take action on infrastructure across your cloud account.
           </p>
         </div>
-        <DemoBadge />
+        <DemoBadge isLive={isLive} />
       </div>
       <Card className="resources-table-card" testId="resources-table-card">
         <div className="resource-view-toolbar">
@@ -1330,6 +1337,7 @@ export default function Home() {
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
 
+  const [isLiveConnected, setIsLiveConnected] = useState(false);
   const [resources, setResources] = useState(DEMO_RESOURCES);
   const [metrics, setMetrics] = useState(DEMO_METRICS);
   const [trend, setTrend] = useState(DEMO_TREND);
@@ -1344,29 +1352,46 @@ export default function Home() {
       .then((data) => {
         const amount = Number(data?.amount);
         if (!Number.isFinite(amount)) return;
+        setIsLiveConnected(true);
 
-        setMetrics((current) => ({
-          ...current,
-          total_spend: amount,
-          daily_average: amount / new Date().getDate(),
-        }));
+        let liveServices = [];
+        let topName = "AWS Services";
+        let topCost = 0;
+        let topShare = 0;
 
-        if (Array.isArray(data.services)) {
-          const liveServices = data.services.map((item) => ({
+        if (Array.isArray(data.services) && data.services.length > 0) {
+          liveServices = data.services.map((item) => ({
             service: item.service,
             cost: Number(item.amount) || 0,
             share: amount > 0 ? ((Number(item.amount) || 0) / amount) * 100 : 0,
-            trend: [],
+            trend: [1, 2, 1, 2, 1, 2],
           }));
+          const sorted = [...liveServices].sort((a, b) => b.cost - a.cost);
+          topName = sorted[0]?.service || "AWS Services";
+          topCost = sorted[0]?.cost || 0;
+          topShare = sorted[0]?.share || 0;
           setServices(liveServices);
         }
+
+        const daysInMonth = new Date().getDate() || 1;
+        setMetrics((current) => ({
+          ...current,
+          total_spend: amount,
+          daily_average: amount / daysInMonth,
+          top_service_name: topName,
+          top_service_cost: topCost,
+          top_service_share: topShare,
+        }));
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn("Could not load AWS costs:", err);
+      });
 
     apiGet("/resources")
       .then((data) => {
         const groups = data?.resources;
         if (!groups || typeof groups !== "object") return;
+        setIsLiveConnected(true);
 
         const liveResources = [
           ...(groups.instances || []).map((item) => ({
@@ -1399,33 +1424,57 @@ export default function Home() {
           })),
         ];
 
-        setResources(liveResources);
+        if (liveResources.length > 0) {
+          setResources(liveResources);
+          const ec2Count = liveResources.filter((r) => r.kind === "EC2").length;
+          const rdsCount = liveResources.filter((r) => r.kind === "RDS").length;
+          const s3Count = liveResources.filter((r) => r.kind === "S3").length;
+          setMetrics((curr) => ({
+            ...curr,
+            resource_summary: [
+              { kind: "EC2 instances", count: ec2Count, color: "blue" },
+              { kind: "RDS databases", count: rdsCount, color: "green" },
+              { kind: "S3 buckets", count: s3Count, color: "orange" },
+            ],
+          }));
+        }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn("Could not load AWS resources:", err);
+      });
   }, []);
 
   const handleStateChange = async (resource) => {
     const nextState = resource.state === "running" ? "stopped" : "running";
+    const action = nextState === "running" ? "start" : "stop";
     try {
-      await apiPatch(`/resources/${resource.id}/state`, { state: nextState });
+      await apiPost("/resources", {
+        action,
+        resource_id: resource.id,
+        resource_type: resource.kind.toLowerCase(),
+      });
+      toast.success(`${resource.name} is now ${nextState}`);
     } catch (e) {
-      // Local state fallback
+      toast.error(`Action failed for ${resource.name}`);
     }
     setResources((prev) =>
       prev.map((r) => (r.id === resource.id ? { ...r, state: nextState } : r))
     );
-    toast.success(`${resource.name} is now ${nextState}`);
   };
 
   const handleTerminate = async (resourceId) => {
     try {
-      await apiDelete(`/resources/${resourceId}`);
+      await apiPost("/resources", {
+        action: "terminate",
+        resource_id: resourceId,
+        resource_type: "ec2",
+      });
+      toast.success("Resource termination requested");
     } catch (e) {
-      // Local state fallback
+      toast.error("Failed to terminate resource");
     }
     setResources((prev) => prev.filter((r) => r.id !== resourceId));
     setTerminateTarget(null);
-    toast.success("Resource terminated in demo workspace");
   };
 
   const askAdvisor = async (prompt) => {
@@ -1434,11 +1483,11 @@ export default function Home() {
 
     try {
       const res = await apiPost("/agent", { prompt });
-      const reply =
-        res?.reply ||
-        (Array.isArray(res?.recommendations) && res.recommendations.length
-          ? res.recommendations.join("\n")
-          : null);
+      const recommendations = Array.isArray(res?.recommendations) ? res.recommendations : [];
+      let reply = res?.reply;
+      if (!reply && recommendations.length > 0) {
+        reply = "Here are optimization recommendations from your AWS AI Agent:\n\n• " + recommendations.join("\n\n• ");
+      }
       if (!reply) throw new Error("Advisor response did not include advice");
       setMessages((curr) => [...curr, { role: "advisor", content: reply }]);
     } catch (err) {
@@ -1491,6 +1540,8 @@ export default function Home() {
               services={services}
               onAsk={askAdvisor}
               showForecast={selectedWidgets.includes("Usage Forecast")}
+              isLive={isLiveConnected}
+              onNavigate={setActiveView}
             />
           )}
           {activeView === "resources" && (
@@ -1498,6 +1549,7 @@ export default function Home() {
               resources={resources}
               onStateChange={handleStateChange}
               onTerminate={setTerminateTarget}
+              isLive={isLiveConnected}
             />
           )}
           {activeView === "advisor" && (
