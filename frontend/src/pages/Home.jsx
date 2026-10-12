@@ -74,32 +74,27 @@ const navItems = [
   { id: "advisor", label: "AI Advisor", icon: Sparkles },
   { id: "budgets", label: "Budgets", icon: BarChart3 },
   { id: "settings", label: "Settings", icon: Settings },
-  { id: "help", label: "Help & Support", icon: LifeBuoy },
 ];
 
 function LogoMark() {
   return (
-    <div className="logo-mark" aria-hidden="true">
-      <span />
-      <span />
-      <span />
-    </div>
+    <img
+      src="/logo.jpg"
+      alt="Opti Advisr Logo"
+      className="logo-mark"
+      style={{
+        width: 32,
+        height: 32,
+        borderRadius: "50%",
+        objectFit: "cover",
+        display: "block",
+      }}
+    />
   );
 }
 
-function DemoBadge({ isLive = false }) {
-  if (isLive) {
-    return (
-      <span className="demo-badge" style={{ borderColor: 'rgba(16, 185, 129, 0.4)', color: '#10b981', background: 'rgba(16, 185, 129, 0.08)' }} data-testid="live-data-badge">
-        <span className="demo-dot" style={{ background: '#10b981' }} /> Live AWS Connected
-      </span>
-    );
-  }
-  return (
-    <span className="demo-badge" data-testid="demo-data-badge">
-      <span className="demo-dot" /> Demo data
-    </span>
-  );
+function DemoBadge() {
+  return null;
 }
 
 function Card({ children, className = "", testId }) {
@@ -251,7 +246,7 @@ function Topbar({ onOpenWidgets, darkMode, onToggleTheme, onSearch }) {
       <div className="topbar-controls">
         <button className="date-control" data-testid="date-range-control">
           <CalendarDays size={15} />
-          <span>Oct 1, 2026 - Oct 7, 2026</span>
+          <span>01/10/2026 - 12/10/2026</span>
           <ChevronDown size={14} />
         </button>
         <button className="granularity-control" data-testid="granularity-control">
@@ -529,7 +524,7 @@ function ForecastCard({ trend, metrics }) {
       projected: point.this_period,
     })),
     ...Array.from({ length: 24 }, (_, index) => ({
-      date: `Oct ${index + 8}`,
+      date: `${String(index + 8).padStart(2, '0')}/10/2026`,
       actual: null,
       projected: dailyAverage,
     })),
@@ -1295,11 +1290,6 @@ function PlaceholderView({ view }) {
       title: "Settings",
       description: "Workspace preferences will live here when you connect a production account.",
     },
-    help: {
-      icon: LifeBuoy,
-      title: "Help & Support",
-      description: "Need a hand? The demo is configured with realistic AWS cost data to explore.",
-    },
   };
   const item = copy[view] || copy.budgets;
   const Icon = item.icon;
@@ -1559,7 +1549,7 @@ export default function Home() {
               onAsk={askAdvisor}
             />
           )}
-          {["budgets", "settings", "help"].includes(activeView) && (
+          {["budgets", "settings"].includes(activeView) && (
             <PlaceholderView view={activeView} />
           )}
         </main>

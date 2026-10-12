@@ -29,13 +29,13 @@ export const DEMO_METRICS = {
 };
 
 export const DEMO_TREND = [
-  { date: 'Oct 1', this_period: 3.04, previous_period: 2.72 },
-  { date: 'Oct 2', this_period: 3.62, previous_period: 3.31 },
-  { date: 'Oct 3', this_period: 3.15, previous_period: 3.06 },
-  { date: 'Oct 4', this_period: 4.18, previous_period: 3.54 },
-  { date: 'Oct 5', this_period: 1.97, previous_period: 1.74 },
-  { date: 'Oct 6', this_period: 5.18, previous_period: 4.23 },
-  { date: 'Oct 7', this_period: 5.34, previous_period: 4.59 },
+  { date: '01/10/2026', this_period: 3.04, previous_period: 2.72 },
+  { date: '02/10/2026', this_period: 3.62, previous_period: 3.31 },
+  { date: '03/10/2026', this_period: 3.15, previous_period: 3.06 },
+  { date: '04/10/2026', this_period: 4.18, previous_period: 3.54 },
+  { date: '05/10/2026', this_period: 1.97, previous_period: 1.74 },
+  { date: '06/10/2026', this_period: 5.18, previous_period: 4.23 },
+  { date: '07/10/2026', this_period: 5.34, previous_period: 4.59 },
 ];
 
 export const DEMO_SERVICES = [
