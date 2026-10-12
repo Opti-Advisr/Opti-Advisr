@@ -186,26 +186,44 @@ function Orb({ small = false }) {
   );
 }
 
-function Sidebar({ activeView, onNavigate, collapsed, onToggle }) {
+function SidebarContent({ activeView, onNavigate, collapsed, onToggle, isMobile = false, onCloseMobile }) {
+  const handleNavClick = (id) => {
+    onNavigate(id);
+    if (isMobile && onCloseMobile) {
+      onCloseMobile();
+    }
+  };
+
   return (
-    <aside className={`app-sidebar ${collapsed ? "sidebar-collapsed" : ""}`} data-testid="app-sidebar">
+    <div className={`sidebar-inner-container ${collapsed ? "sidebar-collapsed-inner" : ""}`} style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div className="sidebar-top">
         <div className="brand-lockup" data-testid="brand-lockup">
           <LogoMark />
           <span className="sidebar-label">Opti <strong>Advisr</strong></span>
         </div>
-        <Tooltip title={collapsed ? "Expand sidebar" : "Collapse sidebar"} placement="right">
+        {isMobile ? (
           <IconButton
-            className="sidebar-toggle"
-            onClick={onToggle}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            data-testid="sidebar-toggle-button"
+            onClick={onCloseMobile}
+            aria-label="Close navigation"
             size="small"
             sx={{ color: "text.secondary" }}
           >
-            {collapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
+            <X size={18} />
           </IconButton>
-        </Tooltip>
+        ) : (
+          <Tooltip title={collapsed ? "Expand sidebar" : "Collapse sidebar"} placement="right">
+            <IconButton
+              className="sidebar-toggle"
+              onClick={onToggle}
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              data-testid="sidebar-toggle-button"
+              size="small"
+              sx={{ color: "text.secondary" }}
+            >
+              {collapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
+            </IconButton>
+          </Tooltip>
+        )}
       </div>
       <nav className="sidebar-nav" aria-label="Main navigation">
         <p className="nav-caption sidebar-label">Workspace</p>
@@ -215,7 +233,7 @@ function Sidebar({ activeView, onNavigate, collapsed, onToggle }) {
             <button
               key={item.id}
               className={`nav-item ${activeView === item.id ? "nav-item-active" : ""}`}
-              onClick={() => onNavigate(item.id)}
+              onClick={() => handleNavClick(item.id)}
               title={item.label}
               data-testid={`nav-${item.id}-button`}
             >
@@ -232,7 +250,7 @@ function Sidebar({ activeView, onNavigate, collapsed, onToggle }) {
             <button
               key={item.id}
               className={`nav-item ${activeView === item.id ? "nav-item-active" : ""}`}
-              onClick={() => onNavigate(item.id)}
+              onClick={() => handleNavClick(item.id)}
               title={item.label}
               data-testid={`nav-${item.id}-button`}
             >
@@ -276,16 +294,37 @@ function Sidebar({ activeView, onNavigate, collapsed, onToggle }) {
         </div>
         <MoreHorizontal size={15} />
       </div>
+    </div>
+  );
+}
+
+function Sidebar({ activeView, onNavigate, collapsed, onToggle }) {
+  return (
+    <aside className={`app-sidebar ${collapsed ? "sidebar-collapsed" : ""}`} data-testid="app-sidebar">
+      <SidebarContent
+        activeView={activeView}
+        onNavigate={onNavigate}
+        collapsed={collapsed}
+        onToggle={onToggle}
+      />
     </aside>
   );
 }
 
-function Topbar({ onOpenWidgets, darkMode, onToggleTheme, onSearch }) {
+function Topbar({ onOpenWidgets, darkMode, onToggleTheme, onSearch, onOpenMobileNav }) {
   const [search, setSearch] = useState("");
   return (
     <header className="topbar" data-testid="app-topbar">
       <div className="mobile-menu-button">
-        <Menu size={19} />
+        <IconButton
+          onClick={onOpenMobileNav}
+          aria-label="Open navigation menu"
+          size="small"
+          data-testid="mobile-menu-toggle"
+          sx={{ color: "text.secondary", p: 0.5 }}
+        >
+          <Menu size={20} />
+        </IconButton>
       </div>
       <Box
         className="topbar-search"
@@ -801,8 +840,8 @@ function ServicesTable({ services }) {
           </IconButton>
         }
       />
-      <TableContainer component={Box} sx={{ mt: 1 }}>
-        <Table size="small" aria-label="top services table">
+      <TableContainer component={Box} sx={{ mt: 1, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+        <Table size="small" aria-label="top services table" sx={{ minWidth: 420 }}>
           <TableHead>
             <TableRow>
               <TableCell>SERVICE</TableCell>
@@ -1052,8 +1091,8 @@ function ResourcesView({ resources, onStateChange, onTerminate, isLive }) {
             ))}
           </Tabs>
         </Box>
-        <TableContainer component={Box} sx={{ mt: 2 }}>
-          <Table size="small" aria-label="resources inventory table">
+        <TableContainer component={Box} sx={{ mt: 2, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+          <Table size="small" aria-label="resources inventory table" sx={{ minWidth: 620 }}>
             <TableHead>
               <TableRow>
                 <TableCell>NAME</TableCell>
@@ -1510,6 +1549,7 @@ function PlaceholderView({ view }) {
 export default function Home() {
   const [activeView, setActiveView] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem("opti_dark_mode");
     return saved !== null ? saved === "true" : true;
@@ -1709,12 +1749,36 @@ export default function Home() {
           collapsed={collapsed}
           onToggle={() => setCollapsed((value) => !value)}
         />
+        <Drawer
+          anchor="left"
+          open={mobileNavOpen}
+          onClose={() => setMobileNavOpen(false)}
+          PaperProps={{
+            sx: {
+              width: 260,
+              p: 2,
+              background: "background.paper",
+              borderRight: "1px solid",
+              borderColor: "divider",
+            },
+          }}
+          data-testid="mobile-navigation-drawer"
+        >
+          <SidebarContent
+            activeView={activeView}
+            onNavigate={setActiveView}
+            collapsed={false}
+            isMobile={true}
+            onCloseMobile={() => setMobileNavOpen(false)}
+          />
+        </Drawer>
         <div className="app-main">
           <Topbar
             onOpenWidgets={() => setWidgetOpen(true)}
             darkMode={darkMode}
             onToggleTheme={() => setDarkMode((value) => !value)}
             onSearch={() => undefined}
+            onOpenMobileNav={() => setMobileNavOpen(true)}
           />
           <main className="main-content">
             {activeView === "dashboard" && (

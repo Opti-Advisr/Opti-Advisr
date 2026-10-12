@@ -1693,10 +1693,13 @@
   }
   html {
     font-family: "Inter Variable", sans-serif;
+    overflow-x: hidden;
   }
   body {
     margin: 0;
     min-width: 320px;
+    width: 100%;
+    overflow-x: hidden;
     background: var(--page);
     color: var(--ink);
     font-family: "Inter Variable", sans-serif;
@@ -3505,64 +3508,77 @@
   }
 }
 @media (max-width: 700px) {
+  /* Hide the static sidebar — MUI Drawer handles mobile nav */
   .app-sidebar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    transform: translateX(-100%);
-  }
-  .app-sidebar:focus-within {
-    transform: translateX(0);
+    display: none !important;
   }
   .topbar {
-    min-height: 58px;
-    padding-inline: 13px;
-    gap: 10px;
+    min-height: 54px;
+    padding-inline: 12px;
+    gap: 8px;
   }
   .mobile-menu-button {
     display: inline-flex;
+    flex-shrink: 0;
   }
   .topbar-search {
     max-width: none;
+    min-width: 0;
+    flex: 1;
   }
-  .topbar-search kbd, .topbar-controls .add-widget-button span, .topbar-controls .export-button span, .topbar-controls .add-widget-button {
+  .topbar-search kbd,
+  .topbar-controls .add-widget-button span,
+  .topbar-controls .export-button span,
+  .topbar-controls .add-widget-button,
+  .topbar-controls .date-control,
+  .topbar-controls .granularity-control,
+  .topbar-divider {
     display: none;
   }
   .topbar-controls {
-    gap: 4px;
+    gap: 2px;
+    flex-shrink: 0;
   }
   .export-button {
     display: inline-flex;
     width: 32px;
+    min-width: 32px;
     padding: 0;
     justify-content: center;
   }
   .topbar-search input {
-    font-size: 11px;
+    font-size: 12px;
   }
   .top-avatar {
     display: none;
   }
   .main-content {
-    padding: 21px 13px 35px;
+    padding: 16px 12px 32px;
+  }
+  .page-stack {
+    gap: 14px;
   }
   .page-intro {
     align-items: flex-start;
     flex-direction: column;
+    gap: 8px;
+  }
+  .page-intro h1 {
+    font-size: 22px;
   }
   .page-intro .demo-badge {
     align-self: flex-start;
   }
   .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
   .metric-card {
-    min-height: 130px;
-    padding: 15px;
+    min-height: 120px;
+    padding: 14px;
   }
   .metric-value {
-    font-size: 21px;
+    font-size: 20px;
   }
   .metric-meta {
     display: block;
@@ -3572,14 +3588,30 @@
   .metric-meta .change-pill {
     margin-right: 3px;
   }
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-grid-bottom {
+    grid-template-columns: 1fr;
+  }
   .dashboard-side-stack {
     display: flex;
+    flex-direction: column;
   }
   .trend-card, .weekday-card, .savings-card, .resource-summary-card, .services-card, .advisor-card {
-    padding: 15px;
+    padding: 14px;
+  }
+  .trend-chart {
+    height: 170px;
+  }
+  .weekday-chart {
+    height: 120px;
+  }
+  .forecast-chart {
+    height: 160px;
   }
   .forecast-card {
-    padding: 15px;
+    padding: 14px;
   }
   .forecast-summary {
     align-items: flex-start;
@@ -3601,7 +3633,7 @@
     gap: 5px;
   }
   .chart-legend span {
-    font-size: 8px;
+    font-size: 9px;
   }
   .resource-stat-list {
     gap: 9px;
@@ -3621,24 +3653,39 @@
   }
   .resource-view-toolbar {
     align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
   }
   .resources-table-card {
-    padding: 15px;
+    padding: 14px;
+  }
+  .advisor-card {
+    min-height: auto;
+  }
+  .chat-card {
+    max-height: none;
   }
   .chat-header, .chat-messages {
-    padding-inline: 16px;
+    padding-inline: 14px;
   }
   .suggested-prompts {
-    padding-inline: 16px;
+    padding-inline: 14px;
+    flex-direction: column;
+  }
+  .suggested-prompts button {
+    width: 100%;
+    text-align: left;
   }
   .chat-composer {
-    margin-inline: 16px;
+    margin-inline: 14px;
   }
   .chat-message {
     max-width: 94%;
   }
   .widget-drawer {
-    padding: 20px 15px;
+    width: 100vw;
+    max-width: 100vw;
+    padding: 20px 14px;
   }
   .widget-item {
     grid-template-columns: 47px 1fr;
@@ -3652,6 +3699,44 @@
   }
   .quick-widget-grid {
     grid-template-columns: 1fr 1fr;
+  }
+  .gauge {
+    width: 110px;
+    height: 110px;
+  }
+  .savings-copy h2 {
+    font-size: 15px;
+  }
+  .placeholder-card {
+    padding: 24px 16px;
+  }
+}
+/* Ultra-small phones */
+@media (max-width: 400px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+  .metric-card {
+    min-height: 100px;
+  }
+  .topbar {
+    padding-inline: 8px;
+    gap: 6px;
+  }
+  .main-content {
+    padding: 12px 8px 28px;
+  }
+  .page-intro h1 {
+    font-size: 19px;
+  }
+  .quick-widget-grid {
+    grid-template-columns: 1fr;
+  }
+  .trend-chart {
+    height: 140px;
+  }
+  .weekday-chart {
+    height: 100px;
   }
 }
 @property --tw-translate-x {
