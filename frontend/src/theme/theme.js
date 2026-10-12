@@ -1,6 +1,6 @@
 import { createTheme } from '@mui/material/styles';
 
-export const getAppTheme = (mode = 'light') =>
+export const getAppTheme = (mode = 'dark') =>
   createTheme({
     palette: {
       mode,
@@ -43,15 +43,23 @@ export const getAppTheme = (mode = 'light') =>
     typography: {
       fontFamily: '"Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       fontSize: 14,
-      h1: { fontWeight: 700 },
-      h2: { fontWeight: 700 },
-      h3: { fontWeight: 700 },
-      h4: { fontWeight: 700 },
-      h5: { fontWeight: 600 },
-      h6: { fontWeight: 600 },
+      fontWeightLight: 300,
+      fontWeightRegular: 400,
+      fontWeightMedium: 500,
+      fontWeightBold: 500,
+      h1: { fontWeight: 500 },
+      h2: { fontWeight: 500 },
+      h3: { fontWeight: 500 },
+      h4: { fontWeight: 500 },
+      h5: { fontWeight: 500 },
+      h6: { fontWeight: 500 },
+      subtitle1: { fontWeight: 400 },
+      subtitle2: { fontWeight: 400 },
+      body1: { fontWeight: 400 },
+      body2: { fontWeight: 400 },
       button: {
         textTransform: 'none',
-        fontWeight: 600,
+        fontWeight: 500,
       },
     },
     shape: {
@@ -66,7 +74,7 @@ export const getAppTheme = (mode = 'light') =>
           root: {
             borderRadius: 8,
             textTransform: 'none',
-            fontWeight: 600,
+            fontWeight: 500,
             fontSize: '13px',
             transition: 'all 0.18s ease-in-out',
           },
@@ -108,9 +116,10 @@ export const getAppTheme = (mode = 'light') =>
             borderBottom: `1px solid ${mode === 'dark' ? '#1e293b' : '#e8ecf4'}`,
             fontSize: '13px',
             padding: '12px 14px',
+            fontWeight: 400,
           },
           head: {
-            fontWeight: 700,
+            fontWeight: 500,
             fontSize: '11px',
             textTransform: 'uppercase',
             letterSpacing: '0.08em',
@@ -121,7 +130,7 @@ export const getAppTheme = (mode = 'light') =>
       MuiChip: {
         styleOverrides: {
           root: {
-            fontWeight: 600,
+            fontWeight: 500,
             fontSize: '11px',
             height: '24px',
             borderRadius: '999px',
@@ -132,7 +141,7 @@ export const getAppTheme = (mode = 'light') =>
         styleOverrides: {
           root: {
             textTransform: 'none',
-            fontWeight: 600,
+            fontWeight: 500,
             fontSize: '13px',
             minHeight: '42px',
           },

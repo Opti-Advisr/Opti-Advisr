@@ -66,7 +66,7 @@
     text-decoration: inherit;
   }
   b, strong {
-    font-weight: bolder;
+    font-weight: 500;
   }
   code, kbd, samp, pre {
     font-family: var(--default-mono-font-family, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);
@@ -1700,7 +1700,14 @@
     background: var(--page);
     color: var(--ink);
     font-family: "Inter Variable", sans-serif;
+    font-weight: 400;
     transition: background-color .25s ease, color .25s ease;
+  }
+  b, strong {
+    font-weight: 500;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 500;
   }
   button, input {
     font: inherit;
@@ -1797,7 +1804,7 @@
   white-space: nowrap;
 }
 .brand-lockup strong {
-  font-weight: 700;
+  font-weight: 500;
 }
 .logo-mark {
   width: 30px;
@@ -1863,7 +1870,7 @@
   letter-spacing: .12em;
   text-transform: uppercase;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--soft);
 }
 .nav-caption {
@@ -1884,7 +1891,7 @@
   background: transparent;
   color: var(--muted);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   text-align: left;
   margin-bottom: 3px;
   transition: background .18s ease, color .18s ease, transform .18s ease;
@@ -1897,7 +1904,7 @@
 .nav-item-active {
   background: var(--blue-soft);
   color: var(--blue);
-  font-weight: 600;
+  font-weight: 500;
 }
 .nav-item svg {
   flex: 0 0 auto;
@@ -1933,7 +1940,7 @@
 .budget-top {
   color: var(--muted);
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 500;
 }
 .budget-amount {
   justify-content: flex-start;
@@ -1943,6 +1950,7 @@
 .budget-amount strong {
   font-size: 18px;
   color: var(--ink);
+  font-weight: 500;
 }
 .budget-amount span {
   color: var(--soft);
@@ -1969,7 +1977,7 @@
 }
 .budget-foot span:last-child {
   color: #10b981;
-  font-weight: 600;
+  font-weight: 500;
 }
 .sidebar-profile {
   display: flex;
@@ -2119,7 +2127,7 @@
   border-radius: 50%;
   flex: 0 0 auto;
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 500;
 }
 .avatar-blue {
   background: #dbe7ff;
@@ -2159,7 +2167,7 @@
   letter-spacing: -.04em;
   font-size: clamp(24px, 2.3vw, 31px);
   line-height: 1.1;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--ink);
 }
 .page-subtitle {
@@ -2181,7 +2189,7 @@
   background: #fffbeb;
   border: 1px solid #fde68a;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 500;
   white-space: nowrap;
 }
 .demo-dot {
@@ -2252,7 +2260,7 @@
   letter-spacing: -.04em;
   font-size: 28px;
   line-height: 1;
-  font-weight: 700;
+  font-weight: 500;
 }
 .metric-meta {
   display: flex;
@@ -2270,7 +2278,7 @@
   border-radius: 5px;
   padding: 4px 6px;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
 }
 .change-negative {
   color: #dc2626;
@@ -2306,7 +2314,7 @@
   margin: 3px 0 0;
   color: var(--ink);
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: -.015em;
 }
 .chart-legend {
@@ -2354,7 +2362,7 @@
   align-items: center;
   color: #10b981;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
 }
 .more-button {
   width: 26px;
@@ -2425,7 +2433,7 @@
   color: var(--blue);
   background: transparent;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
 }
 .text-link:hover {
   color: #2256d6;
@@ -2562,7 +2570,7 @@
   text-align: left;
   color: var(--soft);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: .08em;
 }
 .services-table th:first-child, .services-table td:first-child {
@@ -2588,7 +2596,7 @@
 }
 .services-table td strong {
   color: var(--ink);
-  font-weight: 600;
+  font-weight: 500;
 }
 .share-value {
   color: var(--muted);
@@ -2726,7 +2734,7 @@
   background: transparent;
   color: var(--blue);
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 500;
 }
 .resource-view-toolbar {
   display: flex;
@@ -2764,7 +2772,7 @@
   background: transparent;
   color: var(--muted);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
 }
 .resource-tabs button span {
   margin-left: 6px;
@@ -2828,7 +2836,7 @@
   border: 1px solid;
   border-radius: 999px;
   font-size: 9px;
-  font-weight: 600;
+  font-weight: 500;
 }
 .state-pill.running, .state-pill.available {
   color: #047857;
@@ -2848,7 +2856,7 @@
 }
 .savings-value {
   color: #10b981;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 10px;
 }
 .resource-actions {
@@ -2860,7 +2868,7 @@
   border: 0;
   background: transparent;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 500;
 }
 .small-action {
   color: var(--blue);
@@ -2890,7 +2898,7 @@
   gap: 8px;
   color: #10b981;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 500;
 }
 .chat-card {
   min-height: 650px;
@@ -3156,7 +3164,7 @@
   justify-content: space-between;
   color: var(--muted);
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 500;
   margin: 26px 0 10px;
 }
 .drawer-section-title span:last-child {
@@ -3356,7 +3364,7 @@
   color: #047857;
   padding: 5px 8px;
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 500;
   white-space: nowrap;
 }
 .forecast-summary {

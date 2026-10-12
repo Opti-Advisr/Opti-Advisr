@@ -437,7 +437,7 @@ function MetricCard({
             sx={{
               height: 22,
               fontSize: "11px",
-              fontWeight: 700,
+              fontWeight: 500,
               "& .MuiChip-icon": { ml: "4px" },
             }}
           />
@@ -1095,7 +1095,7 @@ function ResourcesView({ resources, onStateChange, onTerminate, isLive }) {
                           : "default"
                       }
                       variant="outlined"
-                      sx={{ fontWeight: 600, fontSize: "11px" }}
+                      sx={{ fontWeight: 500, fontSize: "11px" }}
                     />
                   </TableCell>
                   <TableCell>
@@ -1372,7 +1372,7 @@ function WidgetDrawer({ onClose, selectedWidgets, onSelectWidget }) {
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
         <div>
           <p className="eyebrow">PERSONALIZE</p>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          <Typography variant="h6" sx={{ fontWeight: 500 }}>
             Add widget
           </Typography>
         </div>
@@ -1420,7 +1420,7 @@ function WidgetDrawer({ onClose, selectedWidgets, onSelectWidget }) {
         ))}
       </div>
       <Box sx={{ display: "flex", justifyContent: "space-between", my: 2 }}>
-        <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary" }}>
+        <Typography variant="caption" sx={{ fontWeight: 500, color: "text.secondary" }}>
           Recommended for you
         </Typography>
         <Typography variant="caption" color="text.secondary">
@@ -1510,7 +1510,10 @@ function PlaceholderView({ view }) {
 export default function Home() {
   const [activeView, setActiveView] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem("opti_dark_mode");
+    return saved !== null ? saved === "true" : true;
+  });
   const [widgetOpen, setWidgetOpen] = useState(false);
   const [selectedWidgets, setSelectedWidgets] = useState([]);
   const [terminateTarget, setTerminateTarget] = useState(null);
@@ -1527,6 +1530,7 @@ export default function Home() {
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
+    localStorage.setItem("opti_dark_mode", darkMode.toString());
   }, [darkMode]);
 
   useEffect(() => {
