@@ -553,16 +553,26 @@ function SpendTrendCard({ trend, totalSpend }) {
 }
 
 function WeekdayCard({ metrics }) {
+  const weekdayData = metrics?.weekday || [
+    { day: "Mon", amount: 3.54 },
+    { day: "Tue", amount: 4.12 },
+    { day: "Wed", amount: 3.72 },
+    { day: "Thu", amount: 5.26 },
+    { day: "Fri", amount: 4.41 },
+    { day: "Sat", amount: 2.64 },
+    { day: "Sun", amount: 2.79 },
+  ];
+  const maxDay = Math.max(...weekdayData.map((item) => item.amount));
+
   return (
-    <Card className="weekday-card" testId="daily-spending-pattern-card">
+    <Card className="weekday-card" testId="weekday-spend-card">
       <SectionHeading
-        eyebrow="DISTRIBUTION"
-        title="Daily Spending Pattern"
+        title="Spend by Weekday"
         action={
           <IconButton
             className="more-button"
-            aria-label="More spending pattern options"
-            data-testid="daily-spending-more-button"
+            aria-label="More weekday options"
+            data-testid="weekday-more-button"
             size="small"
             sx={{ color: "text.secondary" }}
           >
@@ -572,27 +582,31 @@ function WeekdayCard({ metrics }) {
       />
       <div className="chart-wrap weekday-chart">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={metrics.weekday_spend} margin={{ top: 10, right: 0, left: -26, bottom: 0 }}>
+          <BarChart data={weekdayData} margin={{ top: 18, right: 0, left: -24, bottom: 0 }}>
             <CartesianGrid vertical={false} stroke="#edf2f7" />
             <XAxis
               dataKey="day"
               tickLine={false}
               axisLine={false}
               tick={{ fill: "#94a3b8", fontSize: 10 }}
-              dy={6}
             />
-            <YAxis
-              tickLine={false}
-              axisLine={false}
-              tick={{ fill: "#94a3b8", fontSize: 10 }}
-              tickFormatter={(val) => `$${val}`}
+            <YAxis hide />
+            <RechartsTooltip
+              cursor={{ fill: "#f5f7fb" }}
+              formatter={(value) => [formatUsd(value), "Spend"]}
             />
-            <Bar dataKey="cost" radius={[4, 4, 0, 0]}>
-              {metrics.weekday_spend.map((entry, index) => (
-                <Cell
-                  key={`bar-${index}`}
-                  fill={entry.day === "Wed" ? "#2f6bff" : "#c6d9ff"}
-                />
+            <Bar
+              dataKey="amount"
+              radius={[5, 5, 2, 2]}
+              label={{
+                position: "top",
+                fill: "#64748b",
+                fontSize: 10,
+                formatter: (value) => (value === maxDay ? formatUsd(Number(value)) : ""),
+              }}
+            >
+              {weekdayData.map((item) => (
+                <Cell key={item.day} fill={item.amount === maxDay ? "#2f6bff" : "#dce6f8"} />
               ))}
             </Bar>
           </BarChart>
@@ -603,40 +617,37 @@ function WeekdayCard({ metrics }) {
 }
 
 function SavingsCard({ metrics }) {
-  const percentage = Math.round(
-    (metrics.potential_savings / (metrics.total_spend || 26.48)) * 100
-  );
+  const percent = metrics?.savings_opportunity_percent ?? 68;
   return (
-    <Card className="savings-card" testId="savings-gauge-card">
+    <Card className="savings-card" testId="savings-opportunity-card">
       <div className="savings-copy">
-        <div className="eyebrow">OPPORTUNITY</div>
-        <h2 className="section-title">Potential Savings</h2>
+        <div className="eyebrow">OPTIMIZATION TARGET</div>
+        <h2 className="section-title">Savings Opportunity</h2>
         <p>
-          Save up to <strong>{formatUsd(metrics.potential_savings)}/mo</strong> by eliminating
-          idle cloud capacity and rightsizing underutilized resources.
+          On track for <strong>$10/mo target</strong>
         </p>
-        <button className="text-link" data-testid="explore-savings-link">
-          Explore recommendations <ArrowUpRight size={13} />
+        <button className="text-link" data-testid="show-savings-details-button">
+          Show details <ArrowUpRight size={13} />
         </button>
       </div>
       <div
         className="gauge"
-        style={{ "--gauge": `${(percentage / 100) * 360}deg` }}
-        data-testid="savings-gauge"
+        style={{ "--gauge": `${percent * 3.6}deg` }}
       >
-        <div className="gauge-inner">
-          <strong>{percentage}%</strong>
-          <span>of total spend</span>
+        <div>
+          <strong>{percent}%</strong>
+          <span>optimized</span>
         </div>
       </div>
     </Card>
   );
 }
 
-function ForecastCard({ trend, metrics }) {
-  const dailyAverage = metrics.daily_average || 3.78;
-  const projectedTotal = metrics.total_spend + dailyAverage * 24;
-
+function ForecastCard({ trend = [], metrics = {} }) {
+  const observedSpend = trend.reduce((total, point) => total + (point.this_period || 0), 0);
+  const dailyAverage = trend.length ? observedSpend / trend.length : 3.78;
+  const monthEndEstimate = dailyAverage * 31;
+  const remainingBudget = monthEndEstimate - (metrics.budget || 10);
   const forecastData = [
     ...trend.map((point) => ({
       date: point.date,
@@ -654,82 +665,66 @@ function ForecastCard({ trend, metrics }) {
     <Card className="forecast-card" testId="usage-forecast-card">
       <div className="forecast-header">
         <div>
+          <div className="eyebrow">ADDED WIDGET / #FORECASTS</div>
+          <h2 className="section-title">Usage Forecast</h2>
+          <p className="forecast-subtitle">
+            Estimated month-end spend from your current daily trend.
+          </p>
+        </div>
+        <span className="forecast-status">
+          <TrendingUp size={13} /> On pace
+        </span>
+      </div>
+      <div className="forecast-summary">
+        <div>
           <span className="forecast-label">Projected October total</span>
           <strong data-testid="forecast-total-value">
-            {formatUsd(projectedTotal)}
+            {formatUsd(monthEndEstimate)}
           </strong>
+          <span className="forecast-note">
+            {formatUsd(dailyAverage)} daily average · {trend.length} days observed
+          </span>
         </div>
-        <div className="forecast-legend">
-          <span className="legend-item actual">
-            <span className="legend-swatch" /> Actual spend
-          </span>
-          <span className="legend-item projected">
-            <span className="legend-swatch" /> Projected
-          </span>
+        <div className="forecast-budget-callout">
+          <span>vs. $10 budget</span>
+          <strong className="forecast-overage">+{formatUsd(remainingBudget)}</strong>
+          <span>at current usage</span>
         </div>
       </div>
       <div className="chart-wrap forecast-chart">
-        <ResponsiveContainer width="100%" height={200}>
-          <AreaChart data={forecastData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-            <defs>
-              <linearGradient id="forecastFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#2f6bff" stopOpacity={0.2} />
-                <stop offset="95%" stopColor="#2f6bff" stopOpacity={0} />
-              </linearGradient>
-            </defs>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={forecastData} margin={{ top: 10, right: 4, left: -24, bottom: 0 }}>
             <CartesianGrid vertical={false} stroke="#edf2f7" />
             <XAxis
               dataKey="date"
-              tickLine={false}
-              axisLine={false}
-              tick={{ fill: "#94a3b8", fontSize: 10 }}
               interval={4}
-            />
-            <YAxis
               tickLine={false}
               axisLine={false}
               tick={{ fill: "#94a3b8", fontSize: 10 }}
-              tickFormatter={(value) => `$${value}`}
             />
+            <YAxis hide />
             <RechartsTooltip
-              content={({ active, payload }) => {
-                if (active && payload && payload.length) {
-                  const data = payload[0].payload;
-                  return (
-                    <div className="chart-tooltip">
-                      <strong>{data.date}</strong>
-                      {data.actual !== null && (
-                        <div>
-                          <i style={{ background: "#2f6bff" }} />
-                          <span>Actual: <b>${data.actual.toFixed(2)}</b></span>
-                        </div>
-                      )}
-                      <div>
-                        <i style={{ background: "#93c5fd" }} />
-                        <span>Projected: <b>${data.projected.toFixed(2)}</b></span>
-                      </div>
-                    </div>
-                  );
-                }
-                return null;
-              }}
+              formatter={(value, name) => [
+                formatUsd(value),
+                name === "actual" ? "Observed" : "Projected",
+              ]}
             />
-            <Area
+            <Line
               type="monotone"
               dataKey="actual"
               stroke="#2f6bff"
-              strokeWidth={2}
-              fill="url(#forecastFill)"
+              strokeWidth={2.5}
+              dot={false}
             />
             <Line
               type="monotone"
               dataKey="projected"
-              stroke="#93c5fd"
+              stroke="#94a3b8"
               strokeWidth={2}
               strokeDasharray="4 4"
               dot={false}
             />
-          </AreaChart>
+          </LineChart>
         </ResponsiveContainer>
       </div>
       <div className="forecast-footer">
@@ -743,6 +738,7 @@ function ForecastCard({ trend, metrics }) {
     </Card>
   );
 }
+
 
 function ResourcesSummary({ metrics, onNavigate }) {
   const total = metrics.resource_summary.reduce((acc, item) => acc + item.count, 0) || 1;
