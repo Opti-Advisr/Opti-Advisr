@@ -7,19 +7,11 @@ export class ApiError extends Error {
   }
 }
 
-const DEFAULT_API_URL = "https://inib931b1c.execute-api.ap-south-1.amazonaws.com/v1";
-const DEFAULT_API_KEY = "oYQslEeolb4oly9qw1sKo4tTT6owJZl5695SGk0Y";
-
-const configuredApiUrl = (
-  import.meta.env.VITE_API_URL ||
-  import.meta.env.API_BASE_URL ||
-  DEFAULT_API_URL
-)?.replace(/\/$/, "");
-const BASE = configuredApiUrl;
-const API_KEY =
-  import.meta.env.VITE_API_KEY ||
-  import.meta.env.API_KEY ||
-  DEFAULT_API_KEY;
+// API URL and key come only from build-time environment variables
+// (VITE_API_URL, VITE_API_KEY). No credentials are hardcoded in source.
+const configuredApiUrl = (import.meta.env.VITE_API_URL || "")?.replace(/\/$/, "");
+const BASE = configuredApiUrl || "/api";
+const API_KEY = import.meta.env.VITE_API_KEY || "";
 
 async function request(method, path, body) {
   const headers = {};
@@ -47,6 +39,3 @@ async function request(method, path, body) {
 
 export const apiGet = (path) => request("GET", path);
 export const apiPost = (path, body) => request("POST", path, body ?? null);
-export const apiPut = (path, body) => request("PUT", path, body ?? null);
-export const apiPatch = (path, body) => request("PATCH", path, body ?? null);
-export const apiDelete = (path) => request("DELETE", path);
