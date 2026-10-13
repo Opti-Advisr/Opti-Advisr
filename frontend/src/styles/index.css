@@ -2609,6 +2609,11 @@
   display: block;
   border-radius: inherit;
 }
+.services-table .empty-row td {
+  text-align: center;
+  color: var(--muted);
+  padding: 18px 12px;
+}
 .advisor-card {
   min-height: 414px;
   background: linear-gradient(135deg, var(--card), var(--blue-soft));

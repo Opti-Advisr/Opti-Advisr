@@ -8,7 +8,6 @@ import {
   Bell,
   Bot,
   CalendarDays,
-  Check,
   ChevronDown,
   CircleHelp,
   Cloud,
@@ -661,7 +660,12 @@ function ResourcesSummary({ metrics, onNavigate }) {
   );
 }
 
-function ServicesTable({ services }) {
+function ServicesTable({ services, query = "" }) {
+  const visibleServices = services.filter(
+    (service) =>
+      service.service !== "Tax" &&
+      service.service.toLowerCase().includes(query.trim().toLowerCase())
+  );
   return (
     <Card className="services-card" testId="top-services-card">
       <SectionHeading
@@ -686,7 +690,7 @@ function ServicesTable({ services }) {
             </tr>
           </thead>
           <tbody>
-            {services.map((service) => (
+            {visibleServices.map((service) => (
               <tr
                 key={service.service}
                 data-testid={`service-row-${service.service.toLowerCase().replaceAll(" ", "-")}`}
@@ -699,12 +703,21 @@ function ServicesTable({ services }) {
                 </td>
                 <td>
                   <span className="share-value">{service.share}%</span>
-                  <div className="share-track">
-                    <span style={{ width: `${service.share}%` }} />
-                  </div>
+                  {service.share > 0 && (
+                    <div className="share-track">
+                      <span style={{ width: `${service.share}%` }} />
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}
+            {visibleServices.length === 0 && (
+              <tr>
+                <td colSpan={3} className="empty-row">
+                  No services match your search.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -765,7 +778,7 @@ function AdvisorCard({ onAsk, onNavigate }) {
   );
 }
 
-function Dashboard({ metrics, trend, services, onAsk, showForecast, isLive, onNavigate }) {
+function Dashboard({ metrics, trend, services, onAsk, hiddenSections = [], query = "", isLive, onNavigate }) {
   return (
     <div className="page-stack" data-testid="dashboard-view">
       <div className="page-intro">
@@ -816,17 +829,23 @@ function Dashboard({ metrics, trend, services, onAsk, showForecast, isLive, onNa
         />
       </div>
       <div className="dashboard-grid dashboard-grid-top">
-        <SpendTrendCard trend={trend} totalSpend={metrics.total_spend} />
+        {!hiddenSections.includes("trend") && (
+          <SpendTrendCard trend={trend} totalSpend={metrics.total_spend} />
+        )}
         <div className="dashboard-side-stack">
           <WeekdayCard metrics={metrics} />
-          <SavingsCard metrics={metrics} />
+          {!hiddenSections.includes("savings") && <SavingsCard metrics={metrics} />}
         </div>
       </div>
-      {showForecast && <ForecastCard trend={trend} metrics={metrics} />}
+      {!hiddenSections.includes("forecast") && (
+        <ForecastCard trend={trend} metrics={metrics} />
+      )}
       <div className="dashboard-grid dashboard-grid-bottom">
         <div className="left-stack">
           <ResourcesSummary metrics={metrics} onNavigate={onNavigate} />
-          <ServicesTable services={services} />
+          {!hiddenSections.includes("services") && (
+            <ServicesTable services={services} query={query} />
+          )}
         </div>
         <AdvisorCard onAsk={onAsk} onNavigate={onNavigate} />
       </div>
@@ -838,9 +857,16 @@ function stateLabel(state) {
   return state === "available" ? "Available" : state.charAt(0).toUpperCase() + state.slice(1);
 }
 
-function ResourcesView({ resources, onStateChange, onTerminate, isLive }) {
+function ResourcesView({ resources, onStateChange, onTerminate, isLive, query = "" }) {
   const [tab, setTab] = useState("EC2");
-  const filtered = resources.filter((resource) => resource.kind === tab);
+  const q = query.trim().toLowerCase();
+  const filtered = resources.filter(
+    (resource) =>
+      resource.kind === tab &&
+      (q === "" ||
+        resource.name.toLowerCase().includes(q) ||
+        String(resource.id).toLowerCase().includes(q))
+  );
   return (
     <div className="page-stack" data-testid="resources-view">
       <div className="page-intro">
@@ -1173,7 +1199,25 @@ const widgets = [
   },
 ];
 
-function WidgetDrawer({ onClose, selectedWidgets, onSelectWidget }) {
+// Maps widget drawer entries to dashboard sections ("forecast" etc.).
+// "Idle Resource Finder" has no card; selecting it navigates to Resources.
+const WIDGET_SECTIONS = {
+  "Cost by Service": "services",
+  "Daily Spend Trend": "trend",
+  "Budget Tracker": "savings",
+  "Usage Forecast": "forecast",
+};
+
+// Shortcut buttons at the top of the widget drawer. `widget` toggles a
+// dashboard section; `prompt` asks the AI advisor directly.
+const QUICK_WIDGETS = [
+  { label: "Cost Anomaly", prompt: "Are there any cost anomalies this week?" },
+  { label: "Forecast", widget: "Usage Forecast" },
+  { label: "Tag Coverage", prompt: "What is my resource tag coverage?" },
+  { label: "Rightsizing", prompt: "Which resources should I rightsize to save money?" },
+];
+
+function WidgetDrawer({ onClose, hiddenSections, onSelectWidget, onQuickAsk }) {
   const [search, setSearch] = useState("");
   const filteredWidgets = widgets.filter((widget) =>
     widget.title.toLowerCase().includes(search.toLowerCase())
@@ -1209,12 +1253,23 @@ function WidgetDrawer({ onClose, selectedWidgets, onSelectWidget }) {
           />
         </div>
         <div className="quick-widget-grid">
-          {["Cost Anomaly", "Forecast", "Tag Coverage", "Rightsizing"].map((item, index) => (
-            <button key={item} data-testid={`quick-widget-${index}`}>
+          {QUICK_WIDGETS.map((item, index) => (
+            <button
+              key={item.label}
+              data-testid={`quick-widget-${index}`}
+              onClick={() => {
+                if (item.widget) {
+                  onSelectWidget(item.widget);
+                  onClose();
+                } else {
+                  onQuickAsk(item.prompt);
+                }
+              }}
+            >
               <span className={`quick-icon quick-icon-${index}`}>
                 <Sparkles size={13} />
               </span>
-              <strong>{item}</strong>
+              <strong>{item.label}</strong>
               <Plus size={14} />
             </button>
           ))}
@@ -1226,7 +1281,9 @@ function WidgetDrawer({ onClose, selectedWidgets, onSelectWidget }) {
         <div className="widget-list">
           {filteredWidgets.map((widget) => {
             const Icon = widget.icon;
-            const isSelected = selectedWidgets.includes(widget.title);
+            const section = WIDGET_SECTIONS[widget.title];
+            const isFinder = widget.title === "Idle Resource Finder";
+            const isHidden = section ? hiddenSections.includes(section) : false;
             return (
               <div
                 className="widget-item"
@@ -1251,20 +1308,10 @@ function WidgetDrawer({ onClose, selectedWidgets, onSelectWidget }) {
                 </div>
                 <Button
                   size="sm"
-                  disabled={isSelected}
-                  onClick={() => {
-                    onSelectWidget(widget.title);
-                    toast.success(`${widget.title} added to dashboard`);
-                  }}
+                  onClick={() => onSelectWidget(widget.title)}
                   data-testid={`widget-select-${widget.title.toLowerCase().replaceAll(" ", "-")}`}
                 >
-                  {isSelected ? (
-                    <>
-                      <Check size={12} /> Added
-                    </>
-                  ) : (
-                    "Select"
-                  )}
+                  {isFinder ? "Open" : isHidden ? "Show" : "Hide"}
                 </Button>
               </div>
             );
@@ -1320,7 +1367,7 @@ export default function Home() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
   const [widgetOpen, setWidgetOpen] = useState(false);
-  const [selectedWidgets, setSelectedWidgets] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [terminateTarget, setTerminateTarget] = useState(null);
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -1362,7 +1409,6 @@ export default function Home() {
                 baseDenominator > 0
                   ? Number(((cost / baseDenominator) * 100).toFixed(1))
                   : 0,
-              trend: [1, 2, 1, 2, 1, 2],
             };
           });
           const sorted = [...liveServices].sort((a, b) => b.cost - a.cost);
@@ -1453,26 +1499,26 @@ export default function Home() {
         resource_type: resource.kind.toLowerCase(),
       });
       toast.success(`${resource.name} is now ${nextState}`);
+      setResources((prev) =>
+        prev.map((r) => (r.id === resource.id ? { ...r, state: nextState } : r))
+      );
     } catch (e) {
       toast.error(`Action failed for ${resource.name}`);
     }
-    setResources((prev) =>
-      prev.map((r) => (r.id === resource.id ? { ...r, state: nextState } : r))
-    );
   };
 
-  const handleTerminate = async (resourceId) => {
+  const handleTerminate = async (resource) => {
     try {
       await apiPost("/resources", {
         action: "terminate",
-        resource_id: resourceId,
-        resource_type: "ec2",
+        resource_id: resource.id,
+        resource_type: resource.kind.toLowerCase(),
       });
       toast.success("Resource termination requested");
+      setResources((prev) => prev.filter((r) => r.id !== resource.id));
     } catch (e) {
       toast.error("Failed to terminate resource");
     }
-    setResources((prev) => prev.filter((r) => r.id !== resourceId));
     setTerminateTarget(null);
   };
 
@@ -1490,44 +1536,43 @@ export default function Home() {
       setMessages((curr) => [...curr, { role: "advisor", content: reply }]);
       setIsTyping(false);
     } catch (err) {
-      setTimeout(() => {
-        const q = (prompt || "").toLowerCase();
-        let simulatedReply =
-          `I analyzed your current AWS workspace (${resources.length} active resources). Month-to-date spend is $${metrics.total_spend.toFixed(2)}. Consider enabling S3 Intelligent-Tiering and reviewing instance run schedules for maximum cost savings.`;
-        if (q.includes("stop") || q.includes("idle") || q.includes("which resource")) {
-          const running = resources.filter((r) => r.state === "running");
-          if (running.length > 0) {
-            simulatedReply =
-              `You have **${running.length} running resource(s)** that can be stopped outside peak hours:\n\n` +
-              running.map((r) => `• **${r.name}** (${r.kind}, ${r.size})`).join("\n") +
-              "\n\nStopping non-production workloads when inactive will reduce compute charges.";
-          } else {
-            simulatedReply =
-              "**No running EC2 compute instances were detected** incurring hourly charges. Verify unattached EBS volumes and NAT Gateway idle hours for additional savings.";
-          }
-        } else if (q.includes("spend") || q.includes("cost") || q.includes("bill") || q.includes("how much")) {
-          simulatedReply =
-            `Your month-to-date spend is **$${metrics.total_spend.toFixed(2)}**, with a daily average of **$${metrics.daily_average.toFixed(2)}**. Your highest spend is in **${metrics.top_service_name || "AWS Services"}**.`;
-        } else if (q.includes("budget") || q.includes("track")) {
-          simulatedReply =
-            `Your current spend (**$${metrics.total_spend.toFixed(2)}**) is well within your **$${metrics.budget.toFixed(2)}** target budget. You are on track to stay within threshold limits.`;
-        } else if (q.includes("s3") || q.includes("bucket") || q.includes("storage")) {
-          const buckets = resources.filter((r) => r.kind === "S3");
-          simulatedReply =
-            `You have **${buckets.length} active S3 bucket(s)**:\n\n` +
-            buckets.map((b) => `• \`${b.name}\``).join("\n") +
-            "\n\n**Recommendations:**\n1. Enable S3 Intelligent-Tiering for automatic lifecycle management.\n2. Add a rule to abort incomplete multipart uploads after 7 days.";
-        }
-        setMessages((curr) => [...curr, { role: "advisor", content: simulatedReply }]);
-        setIsTyping(false);
-      }, 700);
+      setMessages((curr) => [
+        ...curr,
+        {
+          role: "advisor",
+          content:
+            "I couldn't reach the AI advisor just now. Check your connection and try again in a moment.",
+        },
+      ]);
+      setIsTyping(false);
     }
   };
 
-  const selectWidget = (title) =>
-    setSelectedWidgets((current) =>
-      current.includes(title) ? current : [...current, title]
+  // Dashboard sections toggleable from the widget drawer. "forecast" starts
+  // hidden (opt-in widget); the rest are visible by default.
+  const [hiddenSections, setHiddenSections] = useState(["forecast"]);
+
+  const toggleWidget = (title) => {
+    if (title === "Idle Resource Finder") {
+      setActiveView("resources");
+      setWidgetOpen(false);
+      toast.success("Opened Resources to review idle candidates");
+      return;
+    }
+    const section = WIDGET_SECTIONS[title];
+    if (!section) return;
+    const isHidden = hiddenSections.includes(section);
+    toast.success(`${title} ${isHidden ? "shown" : "hidden"}`);
+    setHiddenSections((current) =>
+      isHidden ? current.filter((s) => s !== section) : [...current, section]
     );
+  };
+
+  const quickAsk = (prompt) => {
+    setWidgetOpen(false);
+    setActiveView("advisor");
+    askAdvisor(prompt);
+  };
 
   return (
     <div className="console-shell">
@@ -1551,7 +1596,7 @@ export default function Home() {
           onOpenWidgets={() => setWidgetOpen(true)}
           darkMode={darkMode}
           onToggleTheme={() => setDarkMode((value) => !value)}
-          onSearch={() => undefined}
+          onSearch={setSearchQuery}
           onToggleMobile={() => setMobileOpen((value) => !value)}
         />
         <main className="main-content">
@@ -1561,7 +1606,8 @@ export default function Home() {
               trend={trend}
               services={services}
               onAsk={askAdvisor}
-              showForecast={selectedWidgets.includes("Usage Forecast")}
+              hiddenSections={hiddenSections}
+              query={searchQuery}
               isLive={isLiveConnected}
               onNavigate={setActiveView}
             />
@@ -1572,6 +1618,7 @@ export default function Home() {
               onStateChange={handleStateChange}
               onTerminate={setTerminateTarget}
               isLive={isLiveConnected}
+              query={searchQuery}
             />
           )}
           {activeView === "advisor" && (
@@ -1589,15 +1636,16 @@ export default function Home() {
       {widgetOpen && (
         <WidgetDrawer
           onClose={() => setWidgetOpen(false)}
-          selectedWidgets={selectedWidgets}
-          onSelectWidget={selectWidget}
+          hiddenSections={hiddenSections}
+          onSelectWidget={toggleWidget}
+          onQuickAsk={quickAsk}
         />
       )}
       {terminateTarget && (
         <TerminateModal
           resource={terminateTarget}
           onClose={() => setTerminateTarget(null)}
-          onConfirm={() => handleTerminate(terminateTarget.id)}
+          onConfirm={() => handleTerminate(terminateTarget)}
         />
       )}
       <Toaster richColors />
