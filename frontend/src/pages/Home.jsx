@@ -5,7 +5,6 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   BarChart3,
-  Bell,
   Bot,
   CalendarDays,
   ChevronDown,
@@ -30,7 +29,6 @@ import {
   Search,
   Send,
   Server,
-  Settings,
   Sparkles,
   Sun,
   Tag,
@@ -71,8 +69,6 @@ const navItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, badge: "1" },
   { id: "resources", label: "Resources", icon: Server },
   { id: "advisor", label: "AI Advisor", icon: Sparkles },
-  { id: "budgets", label: "Budgets", icon: BarChart3 },
-  { id: "settings", label: "Settings", icon: Settings },
 ];
 
 function LogoMark() {
@@ -90,10 +86,6 @@ function LogoMark() {
       }}
     />
   );
-}
-
-function DemoBadge() {
-  return null;
 }
 
 function Card({ children, className = "", testId }) {
@@ -154,7 +146,7 @@ function Sidebar({ activeView, onNavigate, collapsed, onToggle, mobileOpen = fal
       </div>
       <nav className="sidebar-nav" aria-label="Main navigation">
         <p className="nav-caption sidebar-label">Workspace</p>
-        {navItems.slice(0, 3).map((item) => {
+        {navItems.map((item) => {
           const Icon = item.icon;
           return (
             <button
@@ -167,22 +159,6 @@ function Sidebar({ activeView, onNavigate, collapsed, onToggle, mobileOpen = fal
               <Icon size={17} strokeWidth={activeView === item.id ? 2.3 : 1.8} />
               <span className="sidebar-label">{item.label}</span>
               {item.badge && <span className="nav-badge">{item.badge}</span>}
-            </button>
-          );
-        })}
-        <p className="nav-caption sidebar-label nav-caption-spaced">Manage</p>
-        {navItems.slice(3).map((item) => {
-          const Icon = item.icon;
-          return (
-            <button
-              key={item.id}
-              className={`nav-item ${activeView === item.id ? "nav-item-active" : ""}`}
-              onClick={() => handleNavClick(item.id)}
-              title={item.label}
-              data-testid={`nav-${item.id}-button`}
-            >
-              <Icon size={17} strokeWidth={1.8} />
-              <span className="sidebar-label">{item.label}</span>
             </button>
           );
         })}
@@ -285,14 +261,6 @@ function Topbar({ onOpenWidgets, darkMode, onToggleTheme, onSearch, onToggleMobi
         >
           {darkMode ? <Sun size={17} /> : <Moon size={17} />}
         </button>
-        <button
-          className="icon-button notification-button"
-          aria-label="Notifications"
-          data-testid="notifications-button"
-        >
-          <Bell size={17} />
-          <i />
-        </button>
         <div className="avatar avatar-blue top-avatar" data-testid="user-avatar">
           OA
         </div>
@@ -355,13 +323,6 @@ function SpendTrendCard({ trend, totalSpend }) {
             <ArrowUpRight size={14} /> Month-to-date (AWS)
           </span>
         </div>
-        <button
-          className="more-button"
-          aria-label="More spend trend options"
-          data-testid="spend-trend-more-button"
-        >
-          <MoreHorizontal size={18} />
-        </button>
       </div>
       <div className="chart-wrap trend-chart">
         <ResponsiveContainer width="100%" height="100%">
@@ -438,18 +399,7 @@ function WeekdayCard({ metrics }) {
   );
   return (
     <Card className="weekday-card" testId="weekday-spend-card">
-      <SectionHeading
-        title="Spend by Weekday"
-        action={
-          <button
-            className="more-button"
-            aria-label="More weekday options"
-            data-testid="weekday-more-button"
-          >
-            <MoreHorizontal size={18} />
-          </button>
-        }
-      />
+      <SectionHeading title="Spend by Weekday" />
       <div className="chart-wrap weekday-chart">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={weekdayData} margin={{ top: 18, right: 0, left: -24, bottom: 0 }}>
@@ -668,18 +618,7 @@ function ServicesTable({ services, query = "" }) {
   );
   return (
     <Card className="services-card" testId="top-services-card">
-      <SectionHeading
-        title="Top Services by Cost"
-        action={
-          <button
-            className="more-button"
-            aria-label="More service options"
-            data-testid="services-more-button"
-          >
-            <MoreHorizontal size={18} />
-          </button>
-        }
-      />
+      <SectionHeading title="Top Services by Cost" />
       <div className="table-scroll">
         <table className="services-table">
           <thead>
@@ -778,7 +717,7 @@ function AdvisorCard({ onAsk, onNavigate }) {
   );
 }
 
-function Dashboard({ metrics, trend, services, onAsk, hiddenSections = [], query = "", isLive, onNavigate }) {
+function Dashboard({ metrics, trend, services, onAsk, hiddenSections = [], query = "", onNavigate }) {
   return (
     <div className="page-stack" data-testid="dashboard-view">
       <div className="page-intro">
@@ -789,7 +728,6 @@ function Dashboard({ metrics, trend, services, onAsk, hiddenSections = [], query
           </h1>
           <p className="page-subtitle">Here’s what’s happening with your cloud spend across AWS services.</p>
         </div>
-        <DemoBadge isLive={isLive} />
       </div>
       <div className="metrics-grid">
         <MetricCard
@@ -857,7 +795,7 @@ function stateLabel(state) {
   return state === "available" ? "Available" : state.charAt(0).toUpperCase() + state.slice(1);
 }
 
-function ResourcesView({ resources, onStateChange, onTerminate, isLive, query = "" }) {
+function ResourcesView({ resources, onStateChange, onTerminate, query = "" }) {
   const [tab, setTab] = useState("EC2");
   const q = query.trim().toLowerCase();
   const filtered = resources.filter(
@@ -877,7 +815,6 @@ function ResourcesView({ resources, onStateChange, onTerminate, isLive, query = 
             Review your AWS footprint and take action on infrastructure across your cloud account.
           </p>
         </div>
-        <DemoBadge isLive={isLive} />
       </div>
       <Card className="resources-table-card" testId="resources-table-card">
         <div className="resource-view-toolbar">
@@ -1322,45 +1259,6 @@ function WidgetDrawer({ onClose, hiddenSections, onSelectWidget, onQuickAsk }) {
   );
 }
 
-function PlaceholderView({ view }) {
-  const copy = {
-    budgets: {
-      icon: BarChart3,
-      title: "Budgets",
-      description: "Budget controls and threshold alerts are ready for your workspace.",
-    },
-    settings: {
-      icon: Settings,
-      title: "Settings",
-      description: "Workspace preferences will live here when you connect a production account.",
-    },
-  };
-  const item = copy[view] || copy.budgets;
-  const Icon = item.icon;
-  return (
-    <div className="page-stack" data-testid={`${view}-view`}>
-      <div className="page-intro">
-        <div>
-          <p className="eyebrow">WORKSPACE</p>
-          <h1>{item.title}</h1>
-          <p className="page-subtitle">{item.description}</p>
-        </div>
-        <DemoBadge />
-      </div>
-      <Card className="placeholder-card">
-        <div className="placeholder-icon">
-          <Icon size={24} />
-        </div>
-        <h2>{item.title} workspace</h2>
-        <p>{item.description}</p>
-        <Button onClick={() => toast.message("This demo surface is ready for your real API")}>
-          Explore demo
-        </Button>
-      </Card>
-    </div>
-  );
-}
-
 export default function Home() {
   const [activeView, setActiveView] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
@@ -1372,7 +1270,6 @@ export default function Home() {
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
 
-  const [isLiveConnected, setIsLiveConnected] = useState(false);
   const [resources, setResources] = useState(DEMO_RESOURCES);
   const [metrics, setMetrics] = useState(DEMO_METRICS);
   const [trend, setTrend] = useState(DEMO_TREND);
@@ -1387,7 +1284,6 @@ export default function Home() {
       .then((data) => {
         const amount = Number(data?.amount);
         if (!Number.isFinite(amount)) return;
-        setIsLiveConnected(true);
 
         let liveServices = [];
         let topName = "AWS Services";
@@ -1436,7 +1332,6 @@ export default function Home() {
       .then((data) => {
         const groups = data?.resources;
         if (!groups || typeof groups !== "object") return;
-        setIsLiveConnected(true);
 
         const liveResources = [
           ...(groups.instances || []).map((item) => ({
@@ -1608,7 +1503,6 @@ export default function Home() {
               onAsk={askAdvisor}
               hiddenSections={hiddenSections}
               query={searchQuery}
-              isLive={isLiveConnected}
               onNavigate={setActiveView}
             />
           )}
@@ -1617,7 +1511,6 @@ export default function Home() {
               resources={resources}
               onStateChange={handleStateChange}
               onTerminate={setTerminateTarget}
-              isLive={isLiveConnected}
               query={searchQuery}
             />
           )}
@@ -1627,9 +1520,6 @@ export default function Home() {
               isTyping={isTyping}
               onAsk={askAdvisor}
             />
-          )}
-          {["budgets", "settings"].includes(activeView) && (
-            <PlaceholderView view={activeView} />
           )}
         </main>
       </div>

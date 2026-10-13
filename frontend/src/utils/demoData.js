@@ -55,15 +55,6 @@ export const DEMO_RESOURCES = [
   { id: 'backups-bucket', name: 'backups-bucket', resource_id: 's3://backups-bucket', kind: 'S3', size: 'Standard-IA', state: 'available', monthly_savings: 0 },
 ];
 
-export const NAV_ITEMS = [
-  { id: 'dashboard', label: 'Dashboard', badge: '1' },
-  { id: 'resources', label: 'Resources' },
-  { id: 'advisor', label: 'AI Advisor' },
-  { id: 'budgets', label: 'Budgets' },
-  { id: 'settings', label: 'Settings' },
-  { id: 'help', label: 'Help & Support' },
-];
-
 export const SUGGESTED_PROMPTS = [
   'Which resources can I stop to save money?',
   'Why did costs go up this week?',
