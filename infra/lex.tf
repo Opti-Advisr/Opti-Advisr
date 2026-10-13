@@ -61,14 +61,8 @@ resource "aws_lexv2models_bot_locale" "en_us" {
   }
 }
 
-resource "aws_lexv2models_intent" "fallback" {
-  provider                = aws.singapore
-  bot_id                  = aws_lexv2models_bot.advisor.id
-  bot_version             = "DRAFT"
-  locale_id               = aws_lexv2models_bot_locale.en_us.locale_id
-  name                    = "FallbackIntent"
-  parent_intent_signature = "AMAZON.FallbackIntent"
-}
+# No FallbackIntent resource here: Lex creates one automatically in every
+# locale, and Terraform creating another fails with "already exists".
 
 resource "aws_lexv2models_intent" "cost_summary" {
   provider    = aws.singapore
