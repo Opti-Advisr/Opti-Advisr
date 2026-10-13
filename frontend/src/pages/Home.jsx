@@ -790,7 +790,7 @@ function Dashboard({ metrics, trend, services, onAsk, showForecast, isLive, onNa
         <div>
           <p className="eyebrow">OVERVIEW / OCTOBER 2026</p>
           <h1 data-testid="dashboard-title">
-            hello world <span className="wave">✦</span>
+            Cloud Cost Dashboard <span className="wave">✦</span>
           </h1>
           <p className="page-subtitle">Here’s what’s happening with your cloud spend across AWS services.</p>
         </div>
