@@ -3508,9 +3508,25 @@
   }
 }
 @media (max-width: 700px) {
-  /* Hide the static sidebar — MUI Drawer handles mobile nav */
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+    z-index: 95;
+  }
   .app-sidebar {
-    display: none !important;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 0 24px rgba(0, 0, 0, 0.45);
+  }
+  .app-sidebar.sidebar-open {
+    transform: translateX(0);
   }
   .topbar {
     min-height: 54px;

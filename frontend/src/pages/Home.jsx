@@ -50,39 +50,10 @@ import {
   Line,
   LineChart,
   ResponsiveContainer,
-  Tooltip as RechartsTooltip,
+  Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import {
-  ThemeProvider,
-  CssBaseline,
-  Card as MuiCard,
-  CardContent,
-  Typography,
-  Button as MuiButton,
-  IconButton,
-  InputBase,
-  Paper,
-  Box,
-  Chip,
-  Tabs,
-  Tab,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  TableContainer,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Drawer,
-  Badge,
-  Tooltip,
-  LinearProgress,
-} from "@mui/material";
 import { toast } from "sonner";
 import { apiDelete, apiGet, apiPatch, apiPost } from "../lib/api";
 import {
@@ -96,7 +67,6 @@ import { Button } from "../components/ui/button";
 import { Checkbox } from "../components/ui/checkbox";
 import { Input } from "../components/ui/input";
 import { Toaster } from "../components/ui/sonner";
-import { getAppTheme } from "../theme/theme";
 
 const navItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, badge: "1" },
@@ -127,19 +97,11 @@ function DemoBadge() {
   return null;
 }
 
-function Card({ children, className = "", testId, sx = {} }) {
+function Card({ children, className = "", testId }) {
   return (
-    <MuiCard
-      className={`console-card ${className}`}
-      data-testid={testId}
-      sx={{
-        borderRadius: "14px",
-        overflow: "hidden",
-        ...sx,
-      }}
-    >
+    <section className={`console-card ${className}`} data-testid={testId}>
       {children}
-    </MuiCard>
+    </section>
   );
 }
 
@@ -158,19 +120,12 @@ function SectionHeading({ eyebrow, title, action }) {
 }
 
 function Sparkline({ values, color = "#2f6bff" }) {
-  const points = values.map((val, index) => ({ x: index, y: val }));
+  const data = values.map((value, index) => ({ index, value }));
   return (
-    <div className="sparkline">
+    <div className="sparkline" aria-label="service trend sparkline" data-testid="service-trend-sparkline">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={points}>
-          <Line
-            type="monotone"
-            dataKey="y"
-            stroke={color}
-            strokeWidth={2}
-            dot={false}
-            isAnimationActive={false}
-          />
+        <LineChart data={data}>
+          <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={false} />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -179,51 +134,37 @@ function Sparkline({ values, color = "#2f6bff" }) {
 
 function Orb({ small = false }) {
   return (
-    <div className={small ? "advisor-orb advisor-orb-small" : "advisor-orb"}>
+    <div className={`advisor-orb ${small ? "advisor-orb-small" : ""}`} aria-hidden="true">
       <div className="orb-highlight" />
       <span>✦</span>
     </div>
   );
 }
 
-function SidebarContent({ activeView, onNavigate, collapsed, onToggle, isMobile = false, onCloseMobile }) {
-  const handleNavClick = (id) => {
-    onNavigate(id);
-    if (isMobile && onCloseMobile) {
-      onCloseMobile();
-    }
+function Sidebar({ activeView, onNavigate, collapsed, onToggle, mobileOpen = false, onCloseMobile }) {
+  const handleNavClick = (viewId) => {
+    onNavigate(viewId);
+    if (onCloseMobile) onCloseMobile();
   };
 
   return (
-    <div className={`sidebar-inner-container ${collapsed ? "sidebar-collapsed-inner" : ""}`} style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+    <aside
+      className={`app-sidebar ${collapsed ? "sidebar-collapsed" : ""} ${mobileOpen ? "sidebar-open" : ""}`}
+      data-testid="app-sidebar"
+    >
       <div className="sidebar-top">
         <div className="brand-lockup" data-testid="brand-lockup">
           <LogoMark />
           <span className="sidebar-label">Opti <strong>Advisr</strong></span>
         </div>
-        {isMobile ? (
-          <IconButton
-            onClick={onCloseMobile}
-            aria-label="Close navigation"
-            size="small"
-            sx={{ color: "text.secondary" }}
-          >
-            <X size={18} />
-          </IconButton>
-        ) : (
-          <Tooltip title={collapsed ? "Expand sidebar" : "Collapse sidebar"} placement="right">
-            <IconButton
-              className="sidebar-toggle"
-              onClick={onToggle}
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              data-testid="sidebar-toggle-button"
-              size="small"
-              sx={{ color: "text.secondary" }}
-            >
-              {collapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
-            </IconButton>
-          </Tooltip>
-        )}
+        <button
+          className="sidebar-toggle"
+          onClick={onToggle}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          data-testid="sidebar-toggle-button"
+        >
+          {collapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
+        </button>
       </div>
       <nav className="sidebar-nav" aria-label="Main navigation">
         <p className="nav-caption sidebar-label">Workspace</p>
@@ -269,18 +210,9 @@ function SidebarContent({ activeView, onNavigate, collapsed, onToggle, isMobile 
           <strong>$2.04</strong>
           <span>of $10.00</span>
         </div>
-        <Box sx={{ width: "100%", mt: 1, mb: 1 }}>
-          <LinearProgress
-            variant="determinate"
-            value={20.4}
-            sx={{
-              height: 6,
-              borderRadius: 3,
-              backgroundColor: "rgba(47, 107, 255, 0.15)",
-              "& .MuiLinearProgress-bar": { backgroundColor: "#2f6bff", borderRadius: 3 },
-            }}
-          />
-        </Box>
+        <div className="budget-progress">
+          <span style={{ width: "20.4%" }} />
+        </div>
         <div className="budget-foot">
           <span>20% used</span>
           <span>On track</span>
@@ -294,101 +226,45 @@ function SidebarContent({ activeView, onNavigate, collapsed, onToggle, isMobile 
         </div>
         <MoreHorizontal size={15} />
       </div>
-    </div>
-  );
-}
-
-function Sidebar({ activeView, onNavigate, collapsed, onToggle }) {
-  return (
-    <aside className={`app-sidebar ${collapsed ? "sidebar-collapsed" : ""}`} data-testid="app-sidebar">
-      <SidebarContent
-        activeView={activeView}
-        onNavigate={onNavigate}
-        collapsed={collapsed}
-        onToggle={onToggle}
-      />
     </aside>
   );
 }
 
-function Topbar({ onOpenWidgets, darkMode, onToggleTheme, onSearch, onOpenMobileNav }) {
+function Topbar({ onOpenWidgets, darkMode, onToggleTheme, onSearch, onToggleMobile }) {
   const [search, setSearch] = useState("");
   return (
-    <header className="topbar" data-testid="app-topbar">
-      <div className="mobile-menu-button">
-        <IconButton
-          onClick={onOpenMobileNav}
-          aria-label="Open navigation menu"
-          size="small"
-          data-testid="mobile-menu-toggle"
-          sx={{ color: "text.secondary", p: 0.5 }}
-        >
-          <Menu size={20} />
-        </IconButton>
-      </div>
-      <Box
-        className="topbar-search"
-        sx={{
-          border: darkMode ? "1.5px solid #ffffff !important" : "1.5px solid #000000 !important",
-          background: darkMode ? "rgba(255,255,255,0.06) !important" : "#ffffff !important",
-          borderRadius: "8px",
-          px: 1.5,
-          py: 0.5,
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
-          maxWidth: 340,
-          flex: 1,
-        }}
+    <header className="topbar" data-testid="top-navbar">
+      <button
+        type="button"
+        className="mobile-menu-button icon-button"
+        onClick={onToggleMobile}
+        aria-label="Toggle navigation menu"
       >
+        <Menu size={19} />
+      </button>
+      <div className="topbar-search">
         <Search size={16} />
-        <InputBase
+        <Input
           value={search}
           onChange={(event) => {
             setSearch(event.target.value);
             onSearch(event.target.value);
           }}
           placeholder="Search resources..."
-          inputProps={{ "aria-label": "Search resources" }}
+          aria-label="Search resources"
           data-testid="resource-search-input"
-          sx={{
-            flex: 1,
-            fontSize: "13px",
-            color: "inherit",
-          }}
         />
         <kbd>⌘K</kbd>
-      </Box>
+      </div>
       <div className="topbar-controls">
-        <MuiButton
-          variant="text"
-          className="date-control"
-          data-testid="date-range-control"
-          startIcon={<CalendarDays size={15} />}
-          endIcon={<ChevronDown size={14} />}
-          sx={{
-            color: "text.secondary",
-            fontSize: "13px",
-            textTransform: "none",
-            px: 1,
-          }}
-        >
-          01/10/2026 - 12/10/2026
-        </MuiButton>
-        <MuiButton
-          variant="text"
-          className="granularity-control"
-          data-testid="granularity-control"
-          endIcon={<ChevronDown size={14} />}
-          sx={{
-            color: "text.secondary",
-            fontSize: "13px",
-            textTransform: "none",
-            px: 1,
-          }}
-        >
-          Daily
-        </MuiButton>
+        <button className="date-control" data-testid="date-range-control">
+          <CalendarDays size={15} />
+          <span>01/10/2026 - 12/10/2026</span>
+          <ChevronDown size={14} />
+        </button>
+        <button className="granularity-control" data-testid="granularity-control">
+          Daily <ChevronDown size={14} />
+        </button>
         <div className="topbar-divider" />
         <Button
           variant="outline"
@@ -415,50 +291,35 @@ function Topbar({ onOpenWidgets, darkMode, onToggleTheme, onSearch, onOpenMobile
         >
           <Download size={15} /> <span>Export</span>
         </Button>
-        <Tooltip title={darkMode ? "Switch to light mode" : "Switch to dark mode"}>
-          <IconButton
-            className="icon-button"
-            onClick={onToggleTheme}
-            aria-label="Toggle theme"
-            data-testid="theme-toggle-button"
-            size="small"
-            sx={{ color: "text.secondary" }}
-          >
-            {darkMode ? <Sun size={17} /> : <Moon size={17} />}
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Notifications">
-          <IconButton
-            className="icon-button notification-button"
-            aria-label="View notifications"
-            data-testid="notification-button"
-            size="small"
-            sx={{ color: "text.secondary" }}
-          >
-            <Badge color="error" variant="dot">
-              <Bell size={17} />
-            </Badge>
-          </IconButton>
-        </Tooltip>
-        <div className="avatar avatar-light top-avatar">OA</div>
+        <button
+          className="icon-button"
+          onClick={onToggleTheme}
+          aria-label="Toggle theme"
+          data-testid="theme-toggle-button"
+        >
+          {darkMode ? <Sun size={17} /> : <Moon size={17} />}
+        </button>
+        <button
+          className="icon-button notification-button"
+          aria-label="Notifications"
+          data-testid="notifications-button"
+        >
+          <Bell size={17} />
+          <i />
+        </button>
+        <div className="avatar avatar-blue top-avatar" data-testid="user-avatar">
+          OA
+        </div>
       </div>
     </header>
   );
 }
 
-function MetricCard({
-  label,
-  value,
-  detail,
-  badge,
-  icon: Icon,
-  tone = "blue",
-  testId,
-}) {
+function MetricCard({ label, value, detail, badge, icon: Icon, tone = "blue", testId }) {
   return (
     <Card className="metric-card" testId={testId}>
       <div className={`metric-icon metric-icon-${tone}`}>
-        <Icon size={17} />
+        <Icon size={16} />
       </div>
       <p className="metric-label">{label}</p>
       <div className="metric-value" data-testid={`${testId}-value`}>
@@ -466,20 +327,14 @@ function MetricCard({
       </div>
       <div className="metric-meta">
         {badge && (
-          <Chip
-            size="small"
-            icon={<ArrowUpRight size={11} />}
-            label={badge}
+          <span
             className={`change-pill ${
               badge.startsWith("+") ? "change-negative" : "change-neutral"
             }`}
-            sx={{
-              height: 22,
-              fontSize: "11px",
-              fontWeight: 500,
-              "& .MuiChip-icon": { ml: "4px" },
-            }}
-          />
+          >
+            <ArrowUpRight size={11} />
+            {badge}
+          </span>
         )}
         <span>{detail}</span>
       </div>
@@ -514,15 +369,13 @@ function SpendTrendCard({ trend, totalSpend }) {
             <ArrowUpRight size={14} /> Month-to-date (AWS)
           </span>
         </div>
-        <IconButton
+        <button
           className="more-button"
           aria-label="More spend trend options"
           data-testid="spend-trend-more-button"
-          size="small"
-          sx={{ color: "text.secondary" }}
         >
           <MoreHorizontal size={18} />
-        </IconButton>
+        </button>
       </div>
       <div className="chart-wrap trend-chart">
         <ResponsiveContainer width="100%" height="100%">
@@ -547,42 +400,26 @@ function SpendTrendCard({ trend, totalSpend }) {
               tick={{ fill: "#94a3b8", fontSize: 11 }}
               tickFormatter={(value) => `$${value}`}
             />
-            <RechartsTooltip
-              content={({ active, payload }) => {
-                if (active && payload && payload.length) {
-                  return (
-                    <div className="chart-tooltip">
-                      <strong>{payload[0].payload.date}</strong>
-                      <div>
-                        <i style={{ background: "#2f6bff" }} />
-                        <span>This period: <b>${payload[0].value}</b></span>
-                      </div>
-                      {payload[1] && (
-                        <div>
-                          <i style={{ background: "#a9b4c5" }} />
-                          <span>Previous: <b>${payload[1].value}</b></span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                }
-                return null;
-              }}
+            <Tooltip
+              cursor={{ stroke: "#dbe5ff", strokeWidth: 1 }}
+              content={<SpendTooltip />}
             />
             <Area
               type="monotone"
               dataKey="this_period"
               stroke="#2f6bff"
-              strokeWidth={2.4}
+              strokeWidth={2.5}
               fill="url(#spendFill)"
+              name="This period"
             />
             <Line
               type="monotone"
               dataKey="previous_period"
               stroke="#a9b4c5"
-              strokeWidth={1.8}
-              strokeDasharray="4 4"
+              strokeWidth={2}
+              strokeDasharray="5 5"
               dot={false}
+              name="Previous period"
             />
           </AreaChart>
         </ResponsiveContainer>
@@ -591,32 +428,40 @@ function SpendTrendCard({ trend, totalSpend }) {
   );
 }
 
-function WeekdayCard({ metrics }) {
-  const weekdayData = metrics?.weekday || [
-    { day: "Mon", amount: 3.54 },
-    { day: "Tue", amount: 4.12 },
-    { day: "Wed", amount: 3.72 },
-    { day: "Thu", amount: 5.26 },
-    { day: "Fri", amount: 4.41 },
-    { day: "Sat", amount: 2.64 },
-    { day: "Sun", amount: 2.79 },
-  ];
-  const maxDay = Math.max(...weekdayData.map((item) => item.amount));
+function SpendTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="chart-tooltip">
+      <strong>{label}, 2026</strong>
+      {payload.map((entry) => (
+        <div key={entry.name}>
+          <i style={{ background: entry.color }} />
+          {entry.name === "This period" ? "This period" : "Previous"}:{" "}
+          <b>{formatUsd(entry.value)}</b>
+        </div>
+      ))}
+    </div>
+  );
+}
 
+function WeekdayCard({ metrics }) {
+  const weekdayData = metrics?.weekday || DEMO_METRICS.weekday;
+  const maxDay = useMemo(
+    () => (weekdayData.length ? Math.max(...weekdayData.map((item) => item.amount)) : 0),
+    [weekdayData]
+  );
   return (
     <Card className="weekday-card" testId="weekday-spend-card">
       <SectionHeading
         title="Spend by Weekday"
         action={
-          <IconButton
+          <button
             className="more-button"
             aria-label="More weekday options"
             data-testid="weekday-more-button"
-            size="small"
-            sx={{ color: "text.secondary" }}
           >
             <MoreHorizontal size={18} />
-          </IconButton>
+          </button>
         }
       />
       <div className="chart-wrap weekday-chart">
@@ -630,7 +475,7 @@ function WeekdayCard({ metrics }) {
               tick={{ fill: "#94a3b8", fontSize: 10 }}
             />
             <YAxis hide />
-            <RechartsTooltip
+            <Tooltip
               cursor={{ fill: "#f5f7fb" }}
               formatter={(value) => [formatUsd(value), "Spend"]}
             />
@@ -656,7 +501,6 @@ function WeekdayCard({ metrics }) {
 }
 
 function SavingsCard({ metrics }) {
-  const percent = metrics?.savings_opportunity_percent ?? 68;
   return (
     <Card className="savings-card" testId="savings-opportunity-card">
       <div className="savings-copy">
@@ -671,10 +515,10 @@ function SavingsCard({ metrics }) {
       </div>
       <div
         className="gauge"
-        style={{ "--gauge": `${percent * 3.6}deg` }}
+        style={{ "--gauge": `${metrics.savings_opportunity_percent * 3.6}deg` }}
       >
         <div>
-          <strong>{percent}%</strong>
+          <strong>{metrics.savings_opportunity_percent}%</strong>
           <span>optimized</span>
         </div>
       </div>
@@ -682,11 +526,11 @@ function SavingsCard({ metrics }) {
   );
 }
 
-function ForecastCard({ trend = [], metrics = {} }) {
-  const observedSpend = trend.reduce((total, point) => total + (point.this_period || 0), 0);
-  const dailyAverage = trend.length ? observedSpend / trend.length : 3.78;
+function ForecastCard({ trend, metrics }) {
+  const observedSpend = trend.reduce((total, point) => total + point.this_period, 0);
+  const dailyAverage = observedSpend / trend.length;
   const monthEndEstimate = dailyAverage * 31;
-  const remainingBudget = monthEndEstimate - (metrics.budget || 10);
+  const remainingBudget = monthEndEstimate - metrics.budget;
   const forecastData = [
     ...trend.map((point) => ({
       date: point.date,
@@ -694,7 +538,7 @@ function ForecastCard({ trend = [], metrics = {} }) {
       projected: point.this_period,
     })),
     ...Array.from({ length: 24 }, (_, index) => ({
-      date: `${String(index + 8).padStart(2, "0")}/10/2026`,
+      date: `${String(index + 8).padStart(2, '0')}/10/2026`,
       actual: null,
       projected: dailyAverage,
     })),
@@ -742,7 +586,7 @@ function ForecastCard({ trend = [], metrics = {} }) {
               tick={{ fill: "#94a3b8", fontSize: 10 }}
             />
             <YAxis hide />
-            <RechartsTooltip
+            <Tooltip
               formatter={(value, name) => [
                 formatUsd(value),
                 name === "actual" ? "Observed" : "Projected",
@@ -754,21 +598,29 @@ function ForecastCard({ trend = [], metrics = {} }) {
               stroke="#2f6bff"
               strokeWidth={2.5}
               dot={false}
+              connectNulls={false}
+              name="actual"
             />
             <Line
               type="monotone"
               dataKey="projected"
-              stroke="#94a3b8"
+              stroke="#8aaeff"
               strokeWidth={2}
-              strokeDasharray="4 4"
+              strokeDasharray="5 5"
               dot={false}
+              name="projected"
             />
           </LineChart>
         </ResponsiveContainer>
       </div>
       <div className="forecast-footer">
-        <span className="forecast-badge">
-          <TrendingUp size={13} /> On track with $10.00 budget
+        <span>
+          <i className="legend-dot blue" />
+          Observed
+        </span>
+        <span>
+          <i className="legend-dot gray" />
+          Projected daily run rate
         </span>
         <span className="forecast-budget-note">
           Forecast is a demo estimate, not a billing commitment.
@@ -777,7 +629,6 @@ function ForecastCard({ trend = [], metrics = {} }) {
     </Card>
   );
 }
-
 
 function ResourcesSummary({ metrics, onNavigate }) {
   const total = metrics.resource_summary.reduce((acc, item) => acc + item.count, 0) || 1;
@@ -829,68 +680,52 @@ function ServicesTable({ services }) {
       <SectionHeading
         title="Top Services by Cost"
         action={
-          <IconButton
+          <button
             className="more-button"
             aria-label="More service options"
             data-testid="services-more-button"
-            size="small"
-            sx={{ color: "text.secondary" }}
           >
             <MoreHorizontal size={18} />
-          </IconButton>
+          </button>
         }
       />
-      <TableContainer component={Box} sx={{ mt: 1, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-        <Table size="small" aria-label="top services table" sx={{ minWidth: 420 }}>
-          <TableHead>
-            <TableRow>
-              <TableCell>SERVICE</TableCell>
-              <TableCell>COST</TableCell>
-              <TableCell>SHARE</TableCell>
-              <TableCell>TREND</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
+      <div className="table-scroll">
+        <table className="services-table">
+          <thead>
+            <tr>
+              <th>SERVICE</th>
+              <th>COST</th>
+              <th>SHARE</th>
+              <th>TREND</th>
+            </tr>
+          </thead>
+          <tbody>
             {services.map((service) => (
-              <TableRow
+              <tr
                 key={service.service}
                 data-testid={`service-row-${service.service.toLowerCase().replaceAll(" ", "-")}`}
-                hover
               >
-                <TableCell>
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <span className="service-dot" />
-                    <strong>{service.service}</strong>
-                  </Box>
-                </TableCell>
-                <TableCell>
+                <td>
+                  <span className="service-dot" />
+                  {service.service}
+                </td>
+                <td>
                   <strong>{formatUsd(service.cost)}</strong>
-                </TableCell>
-                <TableCell>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <span className="share-value">{service.share}%</span>
-                    <Box sx={{ width: 50 }}>
-                      <LinearProgress
-                        variant="determinate"
-                        value={service.share}
-                        sx={{
-                          height: 5,
-                          borderRadius: 2,
-                          backgroundColor: "rgba(47, 107, 255, 0.12)",
-                          "& .MuiLinearProgress-bar": { backgroundColor: "#2f6bff", borderRadius: 2 },
-                        }}
-                      />
-                    </Box>
-                  </Box>
-                </TableCell>
-                <TableCell>
+                </td>
+                <td>
+                  <span className="share-value">{service.share}%</span>
+                  <div className="share-track">
+                    <span style={{ width: `${service.share}%` }} />
+                  </div>
+                </td>
+                <td>
                   <Sparkline values={service.trend} />
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
             ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+          </tbody>
+        </table>
+      </div>
     </Card>
   );
 }
@@ -917,9 +752,9 @@ function AdvisorCard({ onAsk, onNavigate }) {
           <span>Which resources can I stop?</span>
         </div>
         <div className="advisor-answer">
+          <Orb small />
           <p>
-            You have 1 idle EC2 instance (<code>demo-server</code>) with &lt;2% average CPU over 7 days.
-            Stopping it saves ~<strong>$6.30/mo</strong>.
+            Connected to <strong>AI Agent (Lambda)</strong>. Ask about right-sizing, idle resources, or AWS budgets.
           </p>
         </div>
       </div>
@@ -928,55 +763,35 @@ function AdvisorCard({ onAsk, onNavigate }) {
           value={prompt}
           onChange={(event) => setPrompt(event.target.value)}
           onKeyDown={(event) => event.key === "Enter" && submit()}
-          placeholder="Ask Opti Advisor..."
-          aria-label="Advisor question"
-          data-testid="advisor-quick-input"
+          placeholder="Ask about your AWS costs..."
+          aria-label="Ask about your AWS costs"
+          data-testid="dashboard-advisor-input"
         />
-        <IconButton
+        <button
           onClick={submit}
-          aria-label="Send question"
-          data-testid="advisor-quick-submit"
-          size="small"
-          sx={{
-            backgroundColor: "#2f6bff",
-            color: "#ffffff",
-            "&:hover": { backgroundColor: "#2256d6" },
-          }}
+          aria-label="Send advisor question"
+          data-testid="dashboard-advisor-send-button"
         >
           <Send size={15} />
-        </IconButton>
+        </button>
       </div>
-      <button
-        className="advisor-open-link"
-        onClick={() => onNavigate && onNavigate("advisor")}
-        data-testid="open-full-advisor-button"
-      >
-        Open full advisor chat <ArrowUpRight size={13} />
+      <button className="advisor-open-link" onClick={() => onNavigate && onNavigate("advisor")} data-testid="open-advisor-view-button">
+        Open full advisor <ExternalLink size={12} />
       </button>
     </Card>
   );
 }
 
-function Dashboard({
-  metrics,
-  trend,
-  services,
-  onAsk,
-  showForecast,
-  isLive,
-  onNavigate,
-}) {
+function Dashboard({ metrics, trend, services, onAsk, showForecast, isLive, onNavigate }) {
   return (
     <div className="page-stack" data-testid="dashboard-view">
       <div className="page-intro">
         <div>
           <p className="eyebrow">OVERVIEW / OCTOBER 2026</p>
           <h1 data-testid="dashboard-title">
-            Cloud Cost Dashboard <span className="wave">👋</span>
+            Cloud Cost Dashboard <span className="wave">✦</span>
           </h1>
-          <p className="page-subtitle">
-            Optimize, track, and reduce AWS infrastructure spend with intelligent recommendations.
-          </p>
+          <p className="page-subtitle">Here’s what’s happening with your cloud spend across AWS services.</p>
         </div>
         <DemoBadge isLive={isLive} />
       </div>
@@ -984,16 +799,17 @@ function Dashboard({
         <MetricCard
           label="Total Spend"
           value={formatUsd(metrics.total_spend)}
-          badge="+12.4%"
-          detail="vs previous period"
+          badge="+0.0%"
+          detail="Month-to-date (AWS)"
           icon={Activity}
           tone="blue"
           testId="total-spend-metric"
         />
         <MetricCard
           label="Top Service"
-          value={metrics.top_service_name}
-          detail={`${metrics.top_service_share}% of total spend`}
+          value={formatUsd(metrics.top_service_cost)}
+          badge={`${Math.round(metrics.top_service_share)}%`}
+          detail={metrics.top_service_name}
           icon={Cloud}
           tone="purple"
           testId="top-service-metric"
@@ -1064,50 +880,38 @@ function ResourcesView({ resources, onStateChange, onTerminate, isLive }) {
             <ListFilter size={15} /> Filters
           </Button>
         </div>
-        <Box sx={{ borderBottom: 1, borderColor: "divider", mt: 2 }}>
-          <Tabs
-            value={tab}
-            onChange={(e, val) => setTab(val)}
-            aria-label="resource categories"
-            textColor="primary"
-            indicatorColor="primary"
-          >
-            {["EC2", "RDS", "S3"].map((item) => (
-              <Tab
-                key={item}
-                value={item}
-                label={
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <span>{item}</span>
-                    <Chip
-                      size="small"
-                      label={resources.filter((resource) => resource.kind === item).length}
-                      sx={{ height: 18, fontSize: "10px" }}
-                    />
-                  </Box>
-                }
-                data-testid={`resource-tab-${item.toLowerCase()}`}
-              />
-            ))}
-          </Tabs>
-        </Box>
-        <TableContainer component={Box} sx={{ mt: 2, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-          <Table size="small" aria-label="resources inventory table" sx={{ minWidth: 620 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell>NAME</TableCell>
-                <TableCell>RESOURCE ID</TableCell>
-                <TableCell>SIZE</TableCell>
-                <TableCell>STATE</TableCell>
-                <TableCell>MONTHLY SAVINGS</TableCell>
-                <TableCell>ACTIONS</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
+        <div className="resource-tabs" role="tablist">
+          {["EC2", "RDS", "S3"].map((item) => (
+            <button
+              key={item}
+              className={tab === item ? "resource-tab-active" : ""}
+              onClick={() => setTab(item)}
+              role="tab"
+              aria-selected={tab === item}
+              data-testid={`resource-tab-${item.toLowerCase()}`}
+            >
+              {item}
+              <span>{resources.filter((resource) => resource.kind === item).length}</span>
+            </button>
+          ))}
+        </div>
+        <div className="table-scroll">
+          <table className="resources-table">
+            <thead>
+              <tr>
+                <th>NAME</th>
+                <th>RESOURCE ID</th>
+                <th>SIZE</th>
+                <th>STATE</th>
+                <th>MONTHLY SAVINGS</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
               {filtered.map((resource) => (
-                <TableRow key={resource.id} data-testid={`resource-row-${resource.id}`} hover>
-                  <TableCell>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <tr key={resource.id} data-testid={`resource-row-${resource.id}`}>
+                  <td>
+                    <div className="resource-name">
                       <div className={`resource-kind-icon ${resource.kind.toLowerCase()}`}>
                         {resource.kind === "EC2" ? (
                           <Server size={15} />
@@ -1118,26 +922,19 @@ function ResourcesView({ resources, onStateChange, onTerminate, isLive }) {
                         )}
                       </div>
                       <strong>{resource.name}</strong>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
+                    </div>
+                  </td>
+                  <td>
                     <code>{resource.resource_id}</code>
-                  </TableCell>
-                  <TableCell>{resource.size}</TableCell>
-                  <TableCell>
-                    <Chip
-                      size="small"
-                      label={stateLabel(resource.state)}
-                      color={
-                        resource.state === "running" || resource.state === "available"
-                          ? "success"
-                          : "default"
-                      }
-                      variant="outlined"
-                      sx={{ fontWeight: 500, fontSize: "11px" }}
-                    />
-                  </TableCell>
-                  <TableCell>
+                  </td>
+                  <td>{resource.size}</td>
+                  <td>
+                    <span className={`state-pill ${resource.state}`}>
+                      {resource.state === "running" && <i />}
+                      {stateLabel(resource.state)}
+                    </span>
+                  </td>
+                  <td>
                     {resource.monthly_savings ? (
                       <span className="savings-value">
                         {formatUsd(resource.monthly_savings)}/mo
@@ -1145,38 +942,35 @@ function ResourcesView({ resources, onStateChange, onTerminate, isLive }) {
                     ) : (
                       <span className="muted-copy">—</span>
                     )}
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  </td>
+                  <td>
+                    <div className="resource-actions">
                       {resource.kind === "EC2" && (
-                        <MuiButton
-                          size="small"
-                          variant="text"
+                        <button
+                          className="small-action"
                           onClick={() => onStateChange(resource)}
                           data-testid={`resource-${resource.id}-toggle-button`}
-                          sx={{ textTransform: "none", fontSize: "12px", p: 0.5 }}
                         >
                           {resource.state === "running" ? "Stop" : "Start"}
-                        </MuiButton>
+                        </button>
                       )}
-                      <MuiButton
-                        size="small"
-                        color="error"
-                        variant="text"
+                      <button
+                        className="terminate-action"
                         onClick={() => onTerminate(resource)}
                         data-testid={`resource-${resource.id}-terminate-button`}
-                        startIcon={<Trash2 size={13} />}
-                        sx={{ textTransform: "none", fontSize: "12px", p: 0.5 }}
                       >
-                        Terminate
-                      </MuiButton>
-                    </Box>
-                  </TableCell>
-                </TableRow>
+                        <Trash2 size={13} /> Terminate
+                      </button>
+                    </div>
+                  </td>
+                </tr>
               ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+            </tbody>
+          </table>
+          {filtered.length === 0 && (
+            <div className="empty-state">No resources in this tab.</div>
+          )}
+        </div>
       </Card>
     </div>
   );
@@ -1185,56 +979,66 @@ function ResourcesView({ resources, onStateChange, onTerminate, isLive }) {
 function TerminateModal({ resource, onClose, onConfirm }) {
   const [understood, setUnderstood] = useState(false);
   return (
-    <Dialog
-      open={Boolean(resource)}
-      onClose={onClose}
-      aria-labelledby="terminate-title"
-      data-testid="terminate-confirmation-modal"
-      maxWidth="xs"
-      fullWidth
+    <div
+      className="modal-backdrop"
+      role="presentation"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
-      <DialogTitle id="terminate-title" sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        <Trash2 size={20} color="#ef4444" /> Terminate {resource.name}?
-      </DialogTitle>
-      <DialogContent dividers>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          This action permanently removes the resource from your AWS environment. It cannot be undone.
-        </Typography>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, p: 1.5, bgcolor: "action.hover", borderRadius: 1.5, mb: 2 }}>
+      <div
+        className="confirm-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="terminate-title"
+        data-testid="terminate-confirmation-modal"
+      >
+        <div className="modal-icon">
+          <Trash2 size={19} />
+        </div>
+        <button
+          className="modal-close"
+          onClick={onClose}
+          aria-label="Close confirmation"
+          data-testid="terminate-modal-close-button"
+        >
+          <X size={18} />
+        </button>
+        <h2 id="terminate-title">Terminate {resource.name}?</h2>
+        <p>
+          This action permanently removes the resource from your AWS environment. It cannot be
+          undone.
+        </p>
+        <div className="confirm-resource">
           <div className="resource-kind-icon ec2">
             <Server size={15} />
           </div>
           <div>
             <strong>{resource.name}</strong>
-            <br />
             <code>{resource.resource_id}</code>
           </div>
-        </Box>
-        <label className="confirm-check" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+        </div>
+        <label className="confirm-check">
           <Checkbox
             checked={understood}
             onCheckedChange={(checked) => setUnderstood(checked === true)}
             data-testid="terminate-permanent-checkbox"
           />
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-            I understand this is permanent
-          </Typography>
+          <span>I understand this is permanent</span>
         </label>
-      </DialogContent>
-      <DialogActions sx={{ p: 2 }}>
-        <Button variant="outline" onClick={onClose} data-testid="terminate-cancel-button">
-          Cancel
-        </Button>
-        <Button
-          variant="destructive"
-          disabled={!understood}
-          onClick={onConfirm}
-          data-testid="terminate-confirm-button"
-        >
-          Terminate resource
-        </Button>
-      </DialogActions>
-    </Dialog>
+        <div className="modal-actions">
+          <Button variant="outline" onClick={onClose} data-testid="terminate-cancel-button">
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={!understood}
+            onClick={onConfirm}
+            data-testid="terminate-confirm-button"
+          >
+            Terminate resource
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1315,19 +1119,18 @@ function AdvisorView({ messages, isTyping, onAsk }) {
             </div>
           )}
         </div>
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, px: 3, pb: 2 }}>
+        <div className="suggested-prompts">
           {suggestedPrompts.map((prompt) => (
-            <Chip
+            <button
               key={prompt}
-              label={prompt}
               onClick={() => send(prompt)}
-              icon={<ArrowUpRight size={13} />}
-              variant="outlined"
               data-testid={`suggested-prompt-${prompt.slice(0, 12).toLowerCase().replaceAll(" ", "-")}`}
-              sx={{ cursor: "pointer", fontSize: "12px", height: 28 }}
-            />
+            >
+              {prompt}
+              <ArrowUpRight size={13} />
+            </button>
           ))}
-        </Box>
+        </div>
         <div className="chat-composer">
           <Input
             value={input}
@@ -1337,19 +1140,9 @@ function AdvisorView({ messages, isTyping, onAsk }) {
             aria-label="Advisor message"
             data-testid="advisor-message-input"
           />
-          <IconButton
-            onClick={() => send()}
-            aria-label="Send message"
-            data-testid="advisor-send-button"
-            size="small"
-            sx={{
-              backgroundColor: "#2f6bff",
-              color: "#ffffff",
-              "&:hover": { backgroundColor: "#2256d6" },
-            }}
-          >
-            <Send size={15} />
-          </IconButton>
+          <button onClick={() => send()} aria-label="Send message" data-testid="advisor-send-button">
+            <Send size={16} />
+          </button>
         </div>
         <p className="read-only-disclaimer">
           <CircleHelp size={13} /> The advisor is read-only. It won’t make changes to your AWS account.
@@ -1369,24 +1162,31 @@ const widgets = [
   },
   {
     title: "Daily Spend Trend",
-    description: "Inspect month-to-date trajectory against previous period.",
-    tag: "#Trends",
+    description: "Track spend movement across the week.",
+    tag: "#Costs",
     icon: TrendingUp,
-    tone: "green",
+    tone: "purple",
   },
   {
-    title: "Idle Candidates",
-    description: "Flag resources that have been idle for at least 7 days.",
+    title: "Idle Resource Finder",
+    description: "Find running instances with low CPU you can stop.",
     tag: "#Savings",
-    icon: AlertTriangle,
+    icon: Zap,
     tone: "orange",
   },
   {
+    title: "Budget Tracker",
+    description: "Month-to-date spend against your $10 budget.",
+    tag: "#Budgets",
+    icon: Activity,
+    tone: "green",
+  },
+  {
     title: "Usage Forecast",
-    description: "Extrapolate run-rate to project end-of-month spend.",
-    tag: "#Forecast",
-    icon: Zap,
-    tone: "purple",
+    description: "Estimate month-end spend from current daily trends.",
+    tag: "#Forecasts",
+    icon: TrendingUp,
+    tone: "blue",
   },
 ];
 
@@ -1396,124 +1196,99 @@ function WidgetDrawer({ onClose, selectedWidgets, onSelectWidget }) {
     widget.title.toLowerCase().includes(search.toLowerCase())
   );
   return (
-    <Drawer
-      anchor="right"
-      open={true}
-      onClose={onClose}
-      PaperProps={{
-        sx: {
-          width: { xs: "100%", sm: 400 },
-          p: 3,
-        },
-      }}
-      data-testid="widget-drawer"
+    <div
+      className="drawer-backdrop"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-        <div>
-          <p className="eyebrow">PERSONALIZE</p>
-          <Typography variant="h6" sx={{ fontWeight: 500 }}>
-            Add widget
-          </Typography>
-        </div>
-        <IconButton
-          onClick={onClose}
-          aria-label="Close widget panel"
-          data-testid="widget-drawer-close-button"
-          size="small"
-        >
-          <X size={18} />
-        </IconButton>
-      </Box>
-      <Box
-        sx={{
-          border: 1,
-          borderColor: "divider",
-          borderRadius: 2,
-          px: 1.5,
-          py: 0.5,
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
-          mb: 2,
-        }}
-      >
-        <Search size={15} />
-        <InputBase
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search widgets..."
-          inputProps={{ "aria-label": "Search widgets" }}
-          data-testid="widget-search-input"
-          sx={{ flex: 1, fontSize: "13px" }}
-        />
-      </Box>
-      <div className="quick-widget-grid">
-        {["Cost Anomaly", "Forecast", "Tag Coverage", "Rightsizing"].map((item, index) => (
-          <button key={item} data-testid={`quick-widget-${index}`}>
-            <span className={`quick-icon quick-icon-${index}`}>
-              <Sparkles size={13} />
-            </span>
-            <strong>{item}</strong>
-            <Plus size={14} />
+      <aside className="widget-drawer" data-testid="widget-drawer">
+        <div className="drawer-header">
+          <div>
+            <p className="eyebrow">PERSONALIZE</p>
+            <h2>Add widget</h2>
+          </div>
+          <button
+            className="icon-button"
+            onClick={onClose}
+            aria-label="Close widget panel"
+            data-testid="widget-drawer-close-button"
+          >
+            <X size={18} />
           </button>
-        ))}
-      </div>
-      <Box sx={{ display: "flex", justifyContent: "space-between", my: 2 }}>
-        <Typography variant="caption" sx={{ fontWeight: 500, color: "text.secondary" }}>
-          Recommended for you
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {filteredWidgets.length} widgets
-        </Typography>
-      </Box>
-      <div className="widget-list">
-        {filteredWidgets.map((widget) => {
-          const Icon = widget.icon;
-          const isSelected = selectedWidgets.includes(widget.title);
-          return (
-            <div
-              className="widget-item"
-              key={widget.title}
-              data-testid={`widget-card-${widget.title.toLowerCase().replaceAll(" ", "-")}`}
-            >
-              <div className={`widget-preview ${widget.tone}`}>
-                <Icon size={17} />
-                <div className="preview-bars">
-                  <i />
-                  <i />
-                  <i />
-                  <i />
-                </div>
-              </div>
-              <div className="widget-copy">
-                <div>
-                  <strong>{widget.title}</strong>
-                  <span className="widget-tag">{widget.tag}</span>
-                </div>
-                <p>{widget.description}</p>
-              </div>
-              <Button
-                size="sm"
-                disabled={isSelected}
-                onClick={() => {
-                  onSelectWidget(widget.title);
-                  toast.success(`${widget.title} added to dashboard`);
-                }}
-                data-testid={`widget-select-${widget.title.toLowerCase().replaceAll(" ", "-")}`}
+        </div>
+        <div className="widget-search">
+          <Search size={15} />
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search widgets..."
+            aria-label="Search widgets"
+            data-testid="widget-search-input"
+          />
+        </div>
+        <div className="quick-widget-grid">
+          {["Cost Anomaly", "Forecast", "Tag Coverage", "Rightsizing"].map((item, index) => (
+            <button key={item} data-testid={`quick-widget-${index}`}>
+              <span className={`quick-icon quick-icon-${index}`}>
+                <Sparkles size={13} />
+              </span>
+              <strong>{item}</strong>
+              <Plus size={14} />
+            </button>
+          ))}
+        </div>
+        <div className="drawer-section-title">
+          <span>Recommended for you</span>
+          <span>{filteredWidgets.length} widgets</span>
+        </div>
+        <div className="widget-list">
+          {filteredWidgets.map((widget) => {
+            const Icon = widget.icon;
+            const isSelected = selectedWidgets.includes(widget.title);
+            return (
+              <div
+                className="widget-item"
+                key={widget.title}
+                data-testid={`widget-card-${widget.title.toLowerCase().replaceAll(" ", "-")}`}
               >
-                {isSelected ? (
-                  <>
-                    <Check size={12} /> Added
-                  </>
-                ) : (
-                  "Select"
-                )}
-              </Button>
-            </div>
-          );
-        })}
-      </div>
-    </Drawer>
+                <div className={`widget-preview ${widget.tone}`}>
+                  <Icon size={17} />
+                  <div className="preview-bars">
+                    <i />
+                    <i />
+                    <i />
+                    <i />
+                  </div>
+                </div>
+                <div className="widget-copy">
+                  <div>
+                    <strong>{widget.title}</strong>
+                    <span className="widget-tag">{widget.tag}</span>
+                  </div>
+                  <p>{widget.description}</p>
+                </div>
+                <Button
+                  size="sm"
+                  disabled={isSelected}
+                  onClick={() => {
+                    onSelectWidget(widget.title);
+                    toast.success(`${widget.title} added to dashboard`);
+                  }}
+                  data-testid={`widget-select-${widget.title.toLowerCase().replaceAll(" ", "-")}`}
+                >
+                  {isSelected ? (
+                    <>
+                      <Check size={12} /> Added
+                    </>
+                  ) : (
+                    "Select"
+                  )}
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      </aside>
+    </div>
   );
 }
 
@@ -1533,27 +1308,34 @@ function PlaceholderView({ view }) {
   const item = copy[view] || copy.budgets;
   const Icon = item.icon;
   return (
-    <Card className="placeholder-card" testId={`${view}-view`}>
-      <div className="placeholder-icon">
-        <Icon size={24} />
+    <div className="page-stack" data-testid={`${view}-view`}>
+      <div className="page-intro">
+        <div>
+          <p className="eyebrow">WORKSPACE</p>
+          <h1>{item.title}</h1>
+          <p className="page-subtitle">{item.description}</p>
+        </div>
+        <DemoBadge />
       </div>
-      <h2>{item.title}</h2>
-      <p>{item.description}</p>
-      <Button variant="outline">
-        Configure <ExternalLink size={13} />
-      </Button>
-    </Card>
+      <Card className="placeholder-card">
+        <div className="placeholder-icon">
+          <Icon size={24} />
+        </div>
+        <h2>{item.title} workspace</h2>
+        <p>{item.description}</p>
+        <Button onClick={() => toast.message("This demo surface is ready for your real API")}>
+          Explore demo
+        </Button>
+      </Card>
+    </div>
   );
 }
 
 export default function Home() {
   const [activeView, setActiveView] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem("opti_dark_mode");
-    return saved !== null ? saved === "true" : true;
-  });
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
   const [widgetOpen, setWidgetOpen] = useState(false);
   const [selectedWidgets, setSelectedWidgets] = useState([]);
   const [terminateTarget, setTerminateTarget] = useState(null);
@@ -1566,11 +1348,8 @@ export default function Home() {
   const [trend, setTrend] = useState(DEMO_TREND);
   const [services, setServices] = useState(DEMO_SERVICES);
 
-  const muiTheme = useMemo(() => getAppTheme(darkMode ? "dark" : "light"), [darkMode]);
-
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
-    localStorage.setItem("opti_dark_mode", darkMode.toString());
   }, [darkMode]);
 
   useEffect(() => {
@@ -1655,8 +1434,8 @@ export default function Home() {
           const ec2Count = liveResources.filter((r) => r.kind === "EC2").length;
           const rdsCount = liveResources.filter((r) => r.kind === "RDS").length;
           const s3Count = liveResources.filter((r) => r.kind === "S3").length;
-          setMetrics((current) => ({
-            ...current,
+          setMetrics((curr) => ({
+            ...curr,
             resource_summary: [
               { kind: "EC2 instances", count: ec2Count, color: "blue" },
               { kind: "RDS databases", count: rdsCount, color: "green" },
@@ -1671,48 +1450,52 @@ export default function Home() {
   }, []);
 
   const handleStateChange = async (resource) => {
-    const nextAction = resource.state === "running" ? "stop" : "start";
     const nextState = resource.state === "running" ? "stopped" : "running";
+    const action = nextState === "running" ? "start" : "stop";
     try {
-      await apiPatch(`/resources/${resource.id}`, { action: nextAction });
-      setResources((list) =>
-        list.map((r) => (r.id === resource.id ? { ...r, state: nextState } : r))
-      );
+      await apiPost("/resources", {
+        action,
+        resource_id: resource.id,
+        resource_type: resource.kind.toLowerCase(),
+      });
       toast.success(`${resource.name} is now ${nextState}`);
-    } catch {
-      setResources((list) =>
-        list.map((r) => (r.id === resource.id ? { ...r, state: nextState } : r))
-      );
-      toast.success(`${resource.name} is now ${nextState} (demo)`);
+    } catch (e) {
+      toast.error(`Action failed for ${resource.name}`);
     }
+    setResources((prev) =>
+      prev.map((r) => (r.id === resource.id ? { ...r, state: nextState } : r))
+    );
   };
 
-  const handleTerminate = async (id) => {
+  const handleTerminate = async (resourceId) => {
     try {
-      await apiDelete(`/resources/${id}`);
-      setResources((list) => list.filter((r) => r.id !== id));
-      setTerminateTarget(null);
-      toast.success("Resource terminated");
-    } catch {
-      setResources((list) => list.filter((r) => r.id !== id));
-      setTerminateTarget(null);
-      toast.success("Resource terminated (demo)");
+      await apiPost("/resources", {
+        action: "terminate",
+        resource_id: resourceId,
+        resource_type: "ec2",
+      });
+      toast.success("Resource termination requested");
+    } catch (e) {
+      toast.error("Failed to terminate resource");
     }
+    setResources((prev) => prev.filter((r) => r.id !== resourceId));
+    setTerminateTarget(null);
   };
 
   const askAdvisor = async (prompt) => {
-    setIsTyping(true);
     setMessages((curr) => [...curr, { role: "user", content: prompt }]);
+    setIsTyping(true);
+
     try {
-      const res = await apiPost("/advisor", { prompt });
-      const reply =
-        res?.advice ||
-        res?.reply ||
-        res?.content ||
-        (Array.isArray(res?.recommendations) && res.recommendations[0]?.description);
+      const res = await apiPost("/agent", { prompt });
+      const recommendations = Array.isArray(res?.recommendations) ? res.recommendations : [];
+      let reply = res?.reply;
+      if (!reply && recommendations.length > 0) {
+        reply = "Here are optimization recommendations from your AWS AI Agent:\n\n• " + recommendations.join("\n\n• ");
+      }
       if (!reply) throw new Error("Advisor response did not include advice");
       setMessages((curr) => [...curr, { role: "advisor", content: reply }]);
-    } catch {
+    } catch (err) {
       setTimeout(() => {
         let simulatedReply =
           "Based on your current spend patterns, EC2 Compute accounts for 55.2% of your monthly expenditure. Consider right-sizing instances or leveraging Savings Plans for up to 32% reduced cost.";
@@ -1724,7 +1507,7 @@ export default function Home() {
             "You have spent $2.04 of your $10.00 October budget (20.4%). You are currently on track to stay within limits.";
         } else if (prompt.toLowerCase().includes("up") || prompt.toLowerCase().includes("increase")) {
           simulatedReply =
-            "Spend increased by 12.0% on 06/10 - 07/10 primarily due to data transfer and batch workloads on demo-server.";
+            "Spend increased by 12.0% on Oct 6-7 primarily due to data transfer and batch workloads on demo-server.";
         }
         setMessages((curr) => [...curr, { role: "advisor", content: simulatedReply }]);
         setIsTyping(false);
@@ -1740,94 +1523,77 @@ export default function Home() {
     );
 
   return (
-    <ThemeProvider theme={muiTheme}>
-      <CssBaseline />
-      <div className="console-shell">
-        <Sidebar
-          activeView={activeView}
-          onNavigate={setActiveView}
-          collapsed={collapsed}
-          onToggle={() => setCollapsed((value) => !value)}
+    <div className="console-shell">
+      {mobileOpen && (
+        <div
+          className="sidebar-backdrop"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
         />
-        <Drawer
-          anchor="left"
-          open={mobileNavOpen}
-          onClose={() => setMobileNavOpen(false)}
-          PaperProps={{
-            sx: {
-              width: 260,
-              p: 2,
-              background: "background.paper",
-              borderRight: "1px solid",
-              borderColor: "divider",
-            },
-          }}
-          data-testid="mobile-navigation-drawer"
-        >
-          <SidebarContent
-            activeView={activeView}
-            onNavigate={setActiveView}
-            collapsed={false}
-            isMobile={true}
-            onCloseMobile={() => setMobileNavOpen(false)}
-          />
-        </Drawer>
-        <div className="app-main">
-          <Topbar
-            onOpenWidgets={() => setWidgetOpen(true)}
-            darkMode={darkMode}
-            onToggleTheme={() => setDarkMode((value) => !value)}
-            onSearch={() => undefined}
-            onOpenMobileNav={() => setMobileNavOpen(true)}
-          />
-          <main className="main-content">
-            {activeView === "dashboard" && (
-              <Dashboard
-                metrics={metrics}
-                trend={trend}
-                services={services}
-                onAsk={askAdvisor}
-                showForecast={selectedWidgets.includes("Usage Forecast")}
-                isLive={isLiveConnected}
-                onNavigate={setActiveView}
-              />
-            )}
-            {activeView === "resources" && (
-              <ResourcesView
-                resources={resources}
-                onStateChange={handleStateChange}
-                onTerminate={setTerminateTarget}
-                isLive={isLiveConnected}
-              />
-            )}
-            {activeView === "advisor" && (
-              <AdvisorView
-                messages={messages}
-                isTyping={isTyping}
-                onAsk={askAdvisor}
-              />
-            )}
-            {["budgets", "settings"].includes(activeView) && (
-              <PlaceholderView view={activeView} />
-            )}
-          </main>
-        </div>
-        {widgetOpen && (
-          <WidgetDrawer
-            onClose={() => setWidgetOpen(false)}
-            selectedWidgets={selectedWidgets}
-            onSelectWidget={selectWidget}
-          />
-        )}
-        {terminateTarget && (
-          <TerminateModal
-            resource={terminateTarget}
-            onClose={() => setTerminateTarget(null)}
-            onConfirm={() => handleTerminate(terminateTarget.id)}
-          />
-        )}
-        <Toaster richColors />
+      )}
+      <Sidebar
+        activeView={activeView}
+        onNavigate={setActiveView}
+        collapsed={collapsed}
+        onToggle={() => setCollapsed((value) => !value)}
+        mobileOpen={mobileOpen}
+        onCloseMobile={() => setMobileOpen(false)}
+      />
+      <div className="app-main">
+        <Topbar
+          onOpenWidgets={() => setWidgetOpen(true)}
+          darkMode={darkMode}
+          onToggleTheme={() => setDarkMode((value) => !value)}
+          onSearch={() => undefined}
+          onToggleMobile={() => setMobileOpen((value) => !value)}
+        />
+        <main className="main-content">
+          {activeView === "dashboard" && (
+            <Dashboard
+              metrics={metrics}
+              trend={trend}
+              services={services}
+              onAsk={askAdvisor}
+              showForecast={selectedWidgets.includes("Usage Forecast")}
+              isLive={isLiveConnected}
+              onNavigate={setActiveView}
+            />
+          )}
+          {activeView === "resources" && (
+            <ResourcesView
+              resources={resources}
+              onStateChange={handleStateChange}
+              onTerminate={setTerminateTarget}
+              isLive={isLiveConnected}
+            />
+          )}
+          {activeView === "advisor" && (
+            <AdvisorView
+              messages={messages}
+              isTyping={isTyping}
+              onAsk={askAdvisor}
+            />
+          )}
+          {["budgets", "settings"].includes(activeView) && (
+            <PlaceholderView view={activeView} />
+          )}
+        </main>
       </div>
-    </ThemeProvider>
+      {widgetOpen && (
+        <WidgetDrawer
+          onClose={() => setWidgetOpen(false)}
+          selectedWidgets={selectedWidgets}
+          onSelectWidget={selectWidget}
+        />
+      )}
+      {terminateTarget && (
+        <TerminateModal
+          resource={terminateTarget}
+          onClose={() => setTerminateTarget(null)}
+          onConfirm={() => handleTerminate(terminateTarget.id)}
+        />
+      )}
+      <Toaster richColors />
+    </div>
   );
 }
