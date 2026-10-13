@@ -119,19 +119,6 @@ function SectionHeading({ eyebrow, title, action }) {
   );
 }
 
-function Sparkline({ values, color = "#2f6bff" }) {
-  const data = values.map((value, index) => ({ index, value }));
-  return (
-    <div className="sparkline" aria-label="service trend sparkline" data-testid="service-trend-sparkline">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data}>
-          <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={false} />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
 function Orb({ small = false }) {
   return (
     <div className={`advisor-orb ${small ? "advisor-orb-small" : ""}`} aria-hidden="true">
@@ -696,7 +683,6 @@ function ServicesTable({ services }) {
               <th>SERVICE</th>
               <th>COST</th>
               <th>SHARE</th>
-              <th>TREND</th>
             </tr>
           </thead>
           <tbody>
@@ -706,7 +692,6 @@ function ServicesTable({ services }) {
                 data-testid={`service-row-${service.service.toLowerCase().replaceAll(" ", "-")}`}
               >
                 <td>
-                  <span className="service-dot" />
                   {service.service}
                 </td>
                 <td>
@@ -717,9 +702,6 @@ function ServicesTable({ services }) {
                   <div className="share-track">
                     <span style={{ width: `${service.share}%` }} />
                   </div>
-                </td>
-                <td>
-                  <Sparkline values={service.trend} />
                 </td>
               </tr>
             ))}
