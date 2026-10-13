@@ -52,7 +52,7 @@ import {
   YAxis,
 } from "recharts";
 import { toast } from "sonner";
-import { apiDelete, apiGet, apiPatch, apiPost } from "../lib/api";
+import { apiGet, apiPost } from "../lib/api";
 import {
   DEMO_METRICS,
   DEMO_TREND,
