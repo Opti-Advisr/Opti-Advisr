@@ -11,6 +11,14 @@ terraform {
       version = "~> 3.6"
     }
   }
+
+  backend "s3" {
+    bucket       = "opti-advisr-tfstate-603831738297"
+    key          = "dev/terraform.tfstate"
+    region       = "ap-south-1"
+    use_lockfile = true
+    encrypt      = true
+  }
 }
 
 provider "aws" {
@@ -200,19 +208,49 @@ resource "aws_iam_role_policy" "resource_manager" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect   = "Allow"
-        Action   = ["ec2:DescribeInstances", "ec2:DescribeInstanceStatus", "ec2:DescribeTags", "ec2:StartInstances", "ec2:StopInstances", "ec2:TerminateInstances"]
+        Effect = "Allow"
+        Action = [
+          "ec2:DescribeInstances",
+          "ec2:DescribeInstanceStatus",
+          "ec2:DescribeTags",
+          "rds:DescribeDBInstances",
+          "rds:ListTagsForResource",
+          "s3:ListAllMyBuckets",
+          "s3:ListBucket",
+          "s3:GetBucketLocation",
+          "s3:GetBucketTagging",
+          "cloudwatch:GetMetricStatistics"
+        ]
         Resource = "*"
       },
       {
-        Effect   = "Allow"
-        Action   = ["rds:DescribeDBInstances", "rds:StartDBInstance", "rds:StopDBInstance"]
+        # Mutating EC2 actions only on resources tagged Project=costopt.
+        Effect = "Allow"
+        Action = [
+          "ec2:StartInstances",
+          "ec2:StopInstances",
+          "ec2:TerminateInstances"
+        ]
         Resource = "*"
+        Condition = {
+          StringEquals = {
+            "aws:ResourceTag/Project" = "costopt"
+          }
+        }
       },
       {
-        Effect   = "Allow"
-        Action   = ["s3:ListAllMyBuckets", "s3:ListBucket", "s3:GetBucketLocation"]
+        # Mutating RDS actions only on resources tagged Project=costopt.
+        Effect = "Allow"
+        Action = [
+          "rds:StartDBInstance",
+          "rds:StopDBInstance"
+        ]
         Resource = "*"
+        Condition = {
+          StringEquals = {
+            "aws:ResourceTag/Project" = "costopt"
+          }
+        }
       },
       {
         Effect   = "Allow"
@@ -236,14 +274,28 @@ resource "aws_iam_role_policy" "agent_read_only" {
         Resource = "*"
       },
       {
-        Effect   = "Allow"
-        Action   = ["ec2:DescribeInstances", "ec2:DescribeInstanceStatus", "rds:DescribeDBInstances", "s3:ListAllMyBuckets", "s3:ListBucket", "s3:GetBucketLocation"]
+        Effect = "Allow"
+        Action = [
+          "ec2:DescribeInstances",
+          "ec2:DescribeInstanceStatus",
+          "rds:DescribeDBInstances",
+          "s3:ListAllMyBuckets",
+          "s3:ListBucket",
+          "s3:GetBucketLocation",
+          "cloudwatch:GetMetricStatistics"
+        ]
         Resource = "*"
       },
       {
+        # The advisor is read-only: it may read its data bucket, never write.
         Effect   = "Allow"
-        Action   = ["s3:GetObject", "s3:PutObject"]
+        Action   = ["s3:GetObject"]
         Resource = ["${aws_s3_bucket.agent_data.arn}/*"]
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["lex:RecognizeText"]
+        Resource = ["arn:aws:lex:ap-southeast-1:${data.aws_caller_identity.current.account_id}:bot-alias/${aws_lexv2models_bot.advisor.id}/*"]
       }
     ]
   })
@@ -268,6 +320,10 @@ resource "aws_lambda_function" "backend" {
       RESOURCE_TAG_KEY         = "Project"
       RESOURCE_TAG_VALUE       = "costopt"
       AWS_COST_EXPLORER_REGION = "us-east-1"
+      LEX_REGION               = "ap-southeast-1"
+      LEX_BOT_ID               = aws_lexv2models_bot.advisor.id
+      LEX_BOT_ALIAS_ID         = "TSTALIASID"
+      LEX_LOCALE_ID            = "en_US"
     }
   }
 
