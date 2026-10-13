@@ -1,8 +1,9 @@
 # OptiAdvisor Lex bot.
 # Lex is not available in ap-south-1, so the bot lives in ap-southeast-1
 # through an aliased provider. Everything else stays in ap-south-1.
-# Intents carry static closing responses for now; Lambda fulfillment is
-# enabled per intent once the fulfillment Lambda exists in ap-southeast-1.
+# The advisor Lambda reads the matched intent name from RecognizeText and
+# composes the data reply itself. Lambda fulfillment can be attached per
+# intent once the fulfillment Lambda exists in ap-southeast-1.
 
 provider "aws" {
   alias  = "singapore"
@@ -81,17 +82,6 @@ resource "aws_lexv2models_intent" "cost_summary" {
   sample_utterance { utterance = "Show my cost summary" }
   sample_utterance { utterance = "How much am I spending on AWS" }
 
-  intent_closing_setting {
-    closing_response {
-      message_group {
-        message {
-          plain_text_message {
-            value = "Here is your cost summary."
-          }
-        }
-      }
-    }
-  }
 }
 
 resource "aws_lexv2models_intent" "find_idle" {
@@ -106,17 +96,6 @@ resource "aws_lexv2models_intent" "find_idle" {
   sample_utterance { utterance = "What can I stop to save money" }
   sample_utterance { utterance = "Show me wasted resources" }
 
-  intent_closing_setting {
-    closing_response {
-      message_group {
-        message {
-          plain_text_message {
-            value = "Here are your idle resource candidates."
-          }
-        }
-      }
-    }
-  }
 }
 
 resource "aws_lexv2models_intent" "budget_status" {
@@ -130,17 +109,6 @@ resource "aws_lexv2models_intent" "budget_status" {
   sample_utterance { utterance = "What is my budget status" }
   sample_utterance { utterance = "How much of my budget is left" }
 
-  intent_closing_setting {
-    closing_response {
-      message_group {
-        message {
-          plain_text_message {
-            value = "Here is your budget status."
-          }
-        }
-      }
-    }
-  }
 }
 
 output "lex_bot_id" {
