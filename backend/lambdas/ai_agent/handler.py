@@ -49,6 +49,27 @@ def _read_payload(event):
     return {}
 
 
+def _lex_intent(text, session_id):
+    """Ask Amazon Lex which intent the message matches. Returns None when
+    Lex is not configured or cannot be reached; the caller then falls
+    back to keyword matching."""
+    bot_id = os.environ.get("LEX_BOT_ID")
+    if not bot_id or not text:
+        return None
+    try:
+        lex = boto3.client("lexv2-runtime", region_name=os.environ.get("LEX_REGION", "ap-southeast-1"))
+        resp = lex.recognize_text(
+            botId=bot_id,
+            botAliasId=os.environ.get("LEX_BOT_ALIAS_ID", "TSTALIASID"),
+            localeId=os.environ.get("LEX_LOCALE_ID", "en_US"),
+            sessionId=session_id or "opti-advisr-session",
+            text=text,
+        )
+        return resp.get("sessionState", {}).get("intent", {}).get("name")
+    except Exception:
+        return None
+
+
 def _get_aws_context(region="ap-south-1"):
     ctx = {
         "spend": 0.0,
@@ -109,6 +130,29 @@ def _get_aws_context(region="ap-south-1"):
     except Exception:
         pass
 
+    # 3b. Idle flags from CloudWatch: running instances whose 7-day
+    # average CPU is under 5% are idle candidates.
+    try:
+        from datetime import timedelta
+        cw = boto3.client("cloudwatch", region_name=region)
+        for inst in ctx["instances"]:
+            if inst.get("state") != "running":
+                inst["idle"] = False
+                continue
+            stats = cw.get_metric_statistics(
+                Namespace="AWS/EC2",
+                MetricName="CPUUtilization",
+                Dimensions=[{"Name": "InstanceId", "Value": inst.get("id")}],
+                StartTime=datetime.utcnow() - timedelta(days=7),
+                EndTime=datetime.utcnow(),
+                Period=7 * 24 * 3600,
+                Statistics=["Average"],
+            )
+            points = stats.get("Datapoints", [])
+            inst["idle"] = bool(points) and float(points[0].get("Average", 100.0)) < 5.0
+    except Exception:
+        pass
+
     # 4. RDS Databases
     try:
         rds = boto3.client("rds", region_name=region)
@@ -165,18 +209,19 @@ def _generate_response(prompt, ctx):
     # Which resources can I stop / Idle / Terminate
     if any(k in q for k in ["stop", "idle", "terminate", "turn off", "shutdown", "save money", "which resources"]):
         running_ec2 = [i for i in instances if i.get("state") == "running"]
+        idle_ec2 = [i for i in running_ec2 if i.get("idle")]
         stopped_ec2 = [i for i in instances if i.get("state") == "stopped"]
 
-        if running_ec2:
+        if idle_ec2:
             reply = (
-                f"You currently have **{len(running_ec2)} running EC2 instance(s)** that can be stopped outside business hours:\n\n"
+                f"You currently have **{len(idle_ec2)} idle EC2 instance(s)** (average CPU under 5% over the last 7 days) that can be stopped to save money:\n\n"
             )
-            for inst in running_ec2:
+            for inst in idle_ec2:
                 reply += f"• **{inst.get('name')}** (`{inst.get('id')}`, {inst.get('type')}) - Status: *{inst.get('state')}*\n"
             reply += "\nStopping these instances when not in active use will eliminate hourly compute charges (EBS storage volumes remain preserved)."
         else:
             reply = (
-                f"**No running EC2 instances were detected** incurring hourly compute charges in your workspace.\n\n"
+                f"**No idle EC2 instances were detected.** Running instances are all at or above 5% average CPU for the last 7 days.\n\n"
                 f"**Account Inventory Checked:**\n"
                 f"• EC2 Instances: {len(instances)} (running: 0, stopped: {len(stopped_ec2)})\n"
                 f"• RDS Databases: {len(databases)} running\n"
@@ -304,7 +349,18 @@ def lambda_handler(event, context):
         return {'statusCode': 200, 'headers': CORS_HEADERS, 'body': ''}
 
     payload = _read_payload(event or {})
-    prompt = payload.get("prompt", "")
+    prompt = payload.get("prompt") or payload.get("message") or ""
+    session_id = payload.get("session_id") or "opti-advisr-session"
+
+    # Route through Amazon Lex first: a matched Lex intent steers the
+    # keyword branches below toward the right data-backed answer.
+    intent = _lex_intent(prompt, session_id)
+    if intent == "CostSummary":
+        prompt = "how much did I spend " + prompt
+    elif intent == "FindIdleResources":
+        prompt = "which resources are idle " + prompt
+    elif intent == "BudgetStatus":
+        prompt = "budget status " + prompt
 
     try:
         region = os.environ.get("AWS_REGION", "ap-south-1")
@@ -312,7 +368,7 @@ def lambda_handler(event, context):
         reply, recommendations = _generate_response(prompt, ctx)
         status = "ok"
     except Exception as e:
-        reply = f"I encountered an issue querying AWS telemetry: {str(e)}. However, based on general AWS best practices, ensure idle compute is powered down and S3 lifecycle rules are active."
+        reply = "I encountered an issue querying AWS telemetry. However, based on general AWS best practices, ensure idle compute is powered down and S3 lifecycle rules are active."
         recommendations = [
             "Review Cost Explorer in AWS Console.",
             "Verify IAM permissions for Cost Explorer read access."
