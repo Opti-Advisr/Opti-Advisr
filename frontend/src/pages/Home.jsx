@@ -736,6 +736,7 @@ function AdvisorCard({ onAsk, onNavigate }) {
     if (!prompt.trim()) return;
     onAsk(prompt.trim());
     setPrompt("");
+    if (onNavigate) onNavigate("advisor");
   };
   return (
     <Card className="advisor-card" testId="dashboard-advisor-card">
@@ -1499,33 +1500,46 @@ export default function Home() {
 
     try {
       const res = await apiPost("/agent", { prompt });
-      const recommendations = Array.isArray(res?.recommendations) ? res.recommendations : [];
       let reply = res?.reply;
-      if (!reply && recommendations.length > 0) {
-        reply = "Here are optimization recommendations from your AWS AI Agent:\n\n• " + recommendations.join("\n\n• ");
+      if (!reply && Array.isArray(res?.recommendations) && res.recommendations.length > 0) {
+        reply = "Here are recommendations from your AWS AI Agent:\n\n• " + res.recommendations.join("\n\n• ");
       }
       if (!reply) throw new Error("Advisor response did not include advice");
       setMessages((curr) => [...curr, { role: "advisor", content: reply }]);
+      setIsTyping(false);
     } catch (err) {
       setTimeout(() => {
+        const q = (prompt || "").toLowerCase();
         let simulatedReply =
-          "Based on your current spend patterns, EC2 Compute accounts for 55.2% of your monthly expenditure. Consider right-sizing instances or leveraging Savings Plans for up to 32% reduced cost.";
-        if (prompt.toLowerCase().includes("stop") || prompt.toLowerCase().includes("idle")) {
+          `I analyzed your current AWS workspace (${resources.length} active resources). Month-to-date spend is $${metrics.total_spend.toFixed(2)}. Consider enabling S3 Intelligent-Tiering and reviewing instance run schedules for maximum cost savings.`;
+        if (q.includes("stop") || q.includes("idle") || q.includes("which resource")) {
+          const running = resources.filter((r) => r.state === "running");
+          if (running.length > 0) {
+            simulatedReply =
+              `You have **${running.length} running resource(s)** that can be stopped outside peak hours:\n\n` +
+              running.map((r) => `• **${r.name}** (${r.kind}, ${r.size})`).join("\n") +
+              "\n\nStopping non-production workloads when inactive will reduce compute charges.";
+          } else {
+            simulatedReply =
+              "**No running EC2 compute instances were detected** incurring hourly charges. Verify unattached EBS volumes and NAT Gateway idle hours for additional savings.";
+          }
+        } else if (q.includes("spend") || q.includes("cost") || q.includes("bill") || q.includes("how much")) {
           simulatedReply =
-            "demo-server (t3.micro) averaged 1.8% CPU over 7 days. You could save $6.30/mo by stopping it.";
-        } else if (prompt.toLowerCase().includes("budget")) {
+            `Your month-to-date spend is **$${metrics.total_spend.toFixed(2)}**, with a daily average of **$${metrics.daily_average.toFixed(2)}**. Your highest spend is in **${metrics.top_service_name || "AWS Services"}**.`;
+        } else if (q.includes("budget") || q.includes("track")) {
           simulatedReply =
-            "You have spent $2.04 of your $10.00 October budget (20.4%). You are currently on track to stay within limits.";
-        } else if (prompt.toLowerCase().includes("up") || prompt.toLowerCase().includes("increase")) {
+            `Your current spend (**$${metrics.total_spend.toFixed(2)}**) is well within your **$${metrics.budget.toFixed(2)}** target budget. You are on track to stay within threshold limits.`;
+        } else if (q.includes("s3") || q.includes("bucket") || q.includes("storage")) {
+          const buckets = resources.filter((r) => r.kind === "S3");
           simulatedReply =
-            "Spend increased by 12.0% on Oct 6-7 primarily due to data transfer and batch workloads on demo-server.";
+            `You have **${buckets.length} active S3 bucket(s)**:\n\n` +
+            buckets.map((b) => `• \`${b.name}\``).join("\n") +
+            "\n\n**Recommendations:**\n1. Enable S3 Intelligent-Tiering for automatic lifecycle management.\n2. Add a rule to abort incomplete multipart uploads after 7 days.";
         }
         setMessages((curr) => [...curr, { role: "advisor", content: simulatedReply }]);
         setIsTyping(false);
       }, 700);
-      return;
     }
-    setIsTyping(false);
   };
 
   const selectWidget = (title) =>

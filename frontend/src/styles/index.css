@@ -2982,6 +2982,8 @@
   color: var(--ink);
   font-size: 11px;
   line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 .chat-message.user .message-bubble {
   background: var(--blue);
