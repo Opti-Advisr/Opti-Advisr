@@ -79,5 +79,8 @@ export const WIDGETS = [
 ];
 
 export function formatUsd(value) {
-  return `$${value.toFixed(2)}`;
+  const num = Number(value);
+  if (!Number.isFinite(num) || num === 0) return "$0.00";
+  if (num > 0 && num < 0.01) return "<$0.01";
+  return `$${num.toFixed(2)}`;
 }

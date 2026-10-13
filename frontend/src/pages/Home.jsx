@@ -1365,17 +1365,28 @@ export default function Home() {
         let topShare = 0;
 
         if (Array.isArray(data.services) && data.services.length > 0) {
-          liveServices = data.services.map((item) => ({
-            service: item.service,
-            cost: Number(item.amount) || 0,
-            share: amount > 0 ? ((Number(item.amount) || 0) / amount) * 100 : 0,
-            trend: [1, 2, 1, 2, 1, 2],
-          }));
+          const totalServicesCost = data.services.reduce(
+            (sum, item) => sum + Math.max(0, Number(item.amount) || 0),
+            0
+          );
+          const baseDenominator = amount > 0 ? amount : totalServicesCost;
+          liveServices = data.services.map((item) => {
+            const cost = Math.max(0, Number(item.amount) || 0);
+            return {
+              service: item.service,
+              cost,
+              share:
+                baseDenominator > 0
+                  ? Number(((cost / baseDenominator) * 100).toFixed(1))
+                  : 0,
+              trend: [1, 2, 1, 2, 1, 2],
+            };
+          });
           const sorted = [...liveServices].sort((a, b) => b.cost - a.cost);
           topName = sorted[0]?.service || "AWS Services";
           topCost = sorted[0]?.cost || 0;
           topShare = sorted[0]?.share || 0;
-          setServices(liveServices);
+          setServices(sorted);
         }
 
         const daysInMonth = new Date().getDate() || 1;

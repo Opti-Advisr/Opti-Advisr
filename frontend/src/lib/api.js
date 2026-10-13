@@ -7,9 +7,19 @@ export class ApiError extends Error {
   }
 }
 
-const configuredApiUrl = (import.meta.env.VITE_API_URL || "")?.replace(/\/$/, "");
-const BASE = configuredApiUrl || "/api";
-const API_KEY = import.meta.env.VITE_API_KEY || "";
+const DEFAULT_API_URL = "https://inib931b1c.execute-api.ap-south-1.amazonaws.com/v1";
+const DEFAULT_API_KEY = "oYQslEeolb4oly9qw1sKo4tTT6owJZl5695SGk0Y";
+
+const configuredApiUrl = (
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.API_BASE_URL ||
+  DEFAULT_API_URL
+)?.replace(/\/$/, "");
+const BASE = configuredApiUrl;
+const API_KEY =
+  import.meta.env.VITE_API_KEY ||
+  import.meta.env.API_KEY ||
+  DEFAULT_API_KEY;
 
 async function request(method, path, body) {
   const headers = {};
