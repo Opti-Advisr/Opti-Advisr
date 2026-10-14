@@ -119,7 +119,7 @@ function Orb({ small = false }) {
   );
 }
 
-function Sidebar({ activeView, onNavigate, collapsed, onToggle, mobileOpen = false, onCloseMobile }) {
+function Sidebar({ activeView, onNavigate, collapsed, onToggle, mobileOpen = false, onCloseMobile, metrics }) {
   const handleNavClick = (viewId) => {
     onNavigate(viewId);
     if (onCloseMobile) onCloseMobile();
@@ -165,19 +165,25 @@ function Sidebar({ activeView, onNavigate, collapsed, onToggle, mobileOpen = fal
       </nav>
       <div className="sidebar-bottom sidebar-label" data-testid="budget-summary-card">
         <div className="budget-top">
-          <span>October Budget</span>
+          <span>{new Date().toLocaleString("en-US", { month: "long" })} Budget</span>
           <MoreHorizontal size={15} />
         </div>
         <div className="budget-amount">
-          <strong>$2.04</strong>
-          <span>of $10.00</span>
+          <strong>{formatUsd(metrics?.total_spend ?? 0)}</strong>
+          <span>of {formatUsd(metrics?.budget ?? 10)}</span>
         </div>
         <div className="budget-progress">
-          <span style={{ width: "20.4%" }} />
+          <span
+            style={{
+              width: `${Math.min(100, Math.round(((metrics?.total_spend ?? 0) / (metrics?.budget || 10)) * 100))}%`,
+            }}
+          />
         </div>
         <div className="budget-foot">
-          <span>20% used</span>
-          <span>On track</span>
+          <span>{Math.round(((metrics?.total_spend ?? 0) / (metrics?.budget || 10)) * 100)}% used</span>
+          <span>
+            {(metrics?.total_spend ?? 0) <= (metrics?.budget ?? 10) ? "On track" : "Over budget"}
+          </span>
         </div>
       </div>
       <div className="sidebar-profile" data-testid="sidebar-profile">
@@ -192,8 +198,19 @@ function Sidebar({ activeView, onNavigate, collapsed, onToggle, mobileOpen = fal
   );
 }
 
-function Topbar({ onOpenWidgets, darkMode, onToggleTheme, onSearch, onToggleMobile }) {
+function Topbar({ onOpenWidgets, darkMode, onToggleTheme, onSearch, onToggleMobile, rangeLabel, onCycleRange, granularityLabel, onCycleGranularity, onExport }) {
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    const handler = (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        document.getElementById("global-search-input")?.focus();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
   return (
     <header className="topbar" data-testid="top-navbar">
       <button
@@ -207,6 +224,7 @@ function Topbar({ onOpenWidgets, darkMode, onToggleTheme, onSearch, onToggleMobi
       <div className="topbar-search">
         <Search size={16} />
         <Input
+          id="global-search-input"
           value={search}
           onChange={(event) => {
             setSearch(event.target.value);
@@ -219,13 +237,13 @@ function Topbar({ onOpenWidgets, darkMode, onToggleTheme, onSearch, onToggleMobi
         <kbd>⌘K</kbd>
       </div>
       <div className="topbar-controls">
-        <button className="date-control" data-testid="date-range-control">
+        <button className="date-control" onClick={onCycleRange} data-testid="date-range-control">
           <CalendarDays size={15} />
-          <span>01/10/2026 - 12/10/2026</span>
+          <span>{rangeLabel}</span>
           <ChevronDown size={14} />
         </button>
-        <button className="granularity-control" data-testid="granularity-control">
-          Daily <ChevronDown size={14} />
+        <button className="granularity-control" onClick={onCycleGranularity} data-testid="granularity-control">
+          {granularityLabel} <ChevronDown size={14} />
         </button>
         <div className="topbar-divider" />
         <Button
@@ -236,21 +254,7 @@ function Topbar({ onOpenWidgets, darkMode, onToggleTheme, onSearch, onToggleMobi
         >
           <Grid2X2 size={15} /> <span>Add widget</span>
         </Button>
-        <Button
-          className="export-button"
-          onClick={() => {
-            const blob = new Blob(
-              ["Opti Advisr demo export\nTotal spend,$26.48\nBudget spent,$2.04"],
-              { type: "text/csv" }
-            );
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = "opti-advisr-export.csv";
-            link.click();
-            toast.success("Spend report exported");
-          }}
-          data-testid="export-button"
-        >
+        <Button className="export-button" onClick={onExport} data-testid="export-button">
           <Download size={15} /> <span>Export</span>
         </Button>
         <button
@@ -437,6 +441,7 @@ function WeekdayCard({ metrics }) {
 }
 
 function SavingsCard({ metrics }) {
+  const [expanded, setExpanded] = useState(false);
   return (
     <Card className="savings-card" testId="savings-opportunity-card">
       <div className="savings-copy">
@@ -445,9 +450,24 @@ function SavingsCard({ metrics }) {
         <p>
           On track for <strong>$10/mo target</strong>
         </p>
-        <button className="text-link" data-testid="show-savings-details-button">
-          Show details <ArrowUpRight size={13} />
+        <button
+          className="text-link"
+          onClick={() => setExpanded((value) => !value)}
+          data-testid="show-savings-details-button"
+        >
+          {expanded ? "Hide details" : "Show details"} <ArrowUpRight size={13} />
         </button>
+        {expanded && (
+          <div className="savings-details">
+            <p>
+              Estimated idle savings: <strong>{formatUsd(metrics.idle_savings)}/mo</strong>
+            </p>
+            <p>
+              Budget target: <strong>{formatUsd(metrics.budget)}/mo</strong> ·{" "}
+              {metrics.savings_opportunity_percent}% optimized
+            </p>
+          </div>
+        )}
       </div>
       <div
         className="gauge"
@@ -797,10 +817,12 @@ function stateLabel(state) {
 
 function ResourcesView({ resources, onStateChange, onTerminate, query = "" }) {
   const [tab, setTab] = useState("EC2");
+  const [idleOnly, setIdleOnly] = useState(false);
   const q = query.trim().toLowerCase();
   const filtered = resources.filter(
     (resource) =>
       resource.kind === tab &&
+      (!idleOnly || resource.idle || (resource.monthly_savings ?? 0) > 0) &&
       (q === "" ||
         resource.name.toLowerCase().includes(q) ||
         String(resource.id).toLowerCase().includes(q))
@@ -820,10 +842,15 @@ function ResourcesView({ resources, onStateChange, onTerminate, query = "" }) {
         <div className="resource-view-toolbar">
           <div>
             <h2 className="section-title">Cloud resources</h2>
-            <p className="muted-copy">6 resources connected to this demo workspace</p>
+            <p className="muted-copy">{resources.length} resources in this workspace</p>
           </div>
-          <Button variant="outline" data-testid="resource-filter-button">
-            <ListFilter size={15} /> Filters
+          <Button
+            variant="outline"
+            onClick={() => setIdleOnly((value) => !value)}
+            aria-pressed={idleOnly}
+            data-testid="resource-filter-button"
+          >
+            <ListFilter size={15} /> Filters{idleOnly ? ": Idle only" : ""}
           </Button>
         </div>
         <div className="resource-tabs" role="tablist">
@@ -954,8 +981,14 @@ function TerminateModal({ resource, onClose, onConfirm }) {
           undone.
         </p>
         <div className="confirm-resource">
-          <div className="resource-kind-icon ec2">
-            <Server size={15} />
+          <div className={`resource-kind-icon ${resource.kind.toLowerCase()}`}>
+            {resource.kind === "EC2" ? (
+              <Server size={15} />
+            ) : resource.kind === "RDS" ? (
+              <Database size={15} />
+            ) : (
+              <HardDrive size={15} />
+            )}
           </div>
           <div>
             <strong>{resource.name}</strong>
@@ -1046,7 +1079,7 @@ function AdvisorView({ messages, isTyping, onAsk }) {
                 {message.role === "advisor" ? (
                   <Orb small />
                 ) : (
-                  <div className="avatar avatar-blue">JD</div>
+                  <div className="avatar avatar-blue">OA</div>
                 )}
               </div>
               <div className="message-bubble">{message.content}</div>
@@ -1275,12 +1308,39 @@ export default function Home() {
   const [trend, setTrend] = useState(DEMO_TREND);
   const [services, setServices] = useState(DEMO_SERVICES);
 
+  const RANGE_ORDER = ["mtd", "7d", "30d", "90d"];
+  const [rangePreset, setRangePreset] = useState("mtd");
+  const [granularity, setGranularity] = useState("DAILY");
+
+  const rangeFor = (preset) => {
+    const end = new Date();
+    const start = new Date(end);
+    if (preset === "mtd") start.setDate(1);
+    else if (preset === "7d") start.setDate(end.getDate() - 6);
+    else if (preset === "30d") start.setDate(end.getDate() - 29);
+    else start.setDate(end.getDate() - 89);
+    const iso = (d) => d.toISOString().slice(0, 10);
+    const label = (d) => d.toLocaleDateString("en-GB");
+    return {
+      start: iso(start),
+      end: iso(end),
+      label: `${label(start)} - ${label(end)}`,
+      days: Math.round((end - start) / 86400000) + 1,
+    };
+  };
+
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
   }, [darkMode]);
 
   useEffect(() => {
-    apiPost("/costs", { period: "monthly", metric: "cost" })
+    const range = rangeFor(rangePreset);
+    apiPost("/costs", {
+      start: range.start,
+      end: range.end,
+      granularity,
+      group_by: "SERVICE",
+    })
       .then((data) => {
         const amount = Number(data?.amount);
         if (!Number.isFinite(amount)) return;
@@ -1314,11 +1374,26 @@ export default function Home() {
           setServices(sorted);
         }
 
-        const daysInMonth = new Date().getDate() || 1;
+        if (Array.isArray(data.results) && data.results.length > 0) {
+          const byPeriod = new Map();
+          for (const row of data.results) {
+            const rowAmount = Math.max(0, Number(row.amount) || 0);
+            byPeriod.set(row.period, (byPeriod.get(row.period) || 0) + rowAmount);
+          }
+          const points = [...byPeriod.entries()]
+            .sort(([a], [b]) => (a < b ? -1 : 1))
+            .map(([period, total]) => ({
+              date: period.includes("-") ? period.split("-").reverse().join("/") : period,
+              this_period: Number(total.toFixed(2)),
+              previous_period: 0,
+            }));
+          if (points.length > 0) setTrend(points);
+        }
+
         setMetrics((current) => ({
           ...current,
           total_spend: amount,
-          daily_average: amount / daysInMonth,
+          daily_average: amount / range.days,
           top_service_name: topName,
           top_service_cost: topCost,
           top_service_share: topShare,
@@ -1327,7 +1402,9 @@ export default function Home() {
       .catch((err) => {
         console.warn("Could not load AWS costs:", err);
       });
+  }, [rangePreset, granularity]);
 
+  useEffect(() => {
     apiGet("/resources")
       .then((data) => {
         const groups = data?.resources;
@@ -1342,6 +1419,7 @@ export default function Home() {
             kind: "EC2",
             size: item.type,
             state: item.state,
+            idle: Boolean(item.idle_candidate),
             monthly_savings: 0,
           })),
           ...(groups.databases || []).map((item) => ({
@@ -1392,6 +1470,7 @@ export default function Home() {
         action,
         resource_id: resource.id,
         resource_type: resource.kind.toLowerCase(),
+        confirm: true,
       });
       toast.success(`${resource.name} is now ${nextState}`);
       setResources((prev) =>
@@ -1408,6 +1487,7 @@ export default function Home() {
         action: "terminate",
         resource_id: resource.id,
         resource_type: resource.kind.toLowerCase(),
+        confirm: true,
       });
       toast.success("Resource termination requested");
       setResources((prev) => prev.filter((r) => r.id !== resource.id));
@@ -1415,6 +1495,25 @@ export default function Home() {
       toast.error("Failed to terminate resource");
     }
     setTerminateTarget(null);
+  };
+
+  const handleExport = () => {
+    const rows = [["Service", "Amount (USD)", "Share (%)"]];
+    for (const item of services) {
+      rows.push([item.service, Number(item.cost).toFixed(2), item.share]);
+    }
+    rows.push(["Total spend", Number(metrics.total_spend).toFixed(2), ""]);
+    rows.push(["Monthly budget", Number(metrics.budget).toFixed(2), ""]);
+    const csv = rows
+      .map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "opti-advisr-export.csv";
+    link.click();
+    URL.revokeObjectURL(link.href);
+    toast.success("Spend report exported");
   };
 
   const askAdvisor = async (prompt) => {
@@ -1485,6 +1584,7 @@ export default function Home() {
         onToggle={() => setCollapsed((value) => !value)}
         mobileOpen={mobileOpen}
         onCloseMobile={() => setMobileOpen(false)}
+        metrics={metrics}
       />
       <div className="app-main">
         <Topbar
@@ -1493,6 +1593,17 @@ export default function Home() {
           onToggleTheme={() => setDarkMode((value) => !value)}
           onSearch={setSearchQuery}
           onToggleMobile={() => setMobileOpen((value) => !value)}
+          rangeLabel={rangeFor(rangePreset).label}
+          onCycleRange={() =>
+            setRangePreset(
+              (current) => RANGE_ORDER[(RANGE_ORDER.indexOf(current) + 1) % RANGE_ORDER.length]
+            )
+          }
+          granularityLabel={granularity === "DAILY" ? "Daily" : "Monthly"}
+          onCycleGranularity={() =>
+            setGranularity((current) => (current === "DAILY" ? "MONTHLY" : "DAILY"))
+          }
+          onExport={handleExport}
         />
         <main className="main-content">
           {activeView === "dashboard" && (
