@@ -1177,7 +1177,7 @@ function SettingsView({ metrics, onBudgetChange, darkMode, onToggleTheme }) {
         </div>
         <div className="settings-row">
           <span className="muted-copy">API endpoint</span>
-          <code>{import.meta.env.VITE_API_URL || "Not configured"}</code>
+          <code>{import.meta.env.VITE_API_URL || "/api (same-origin Worker proxy)"}</code>
         </div>
         <div className="settings-row">
           <span className="muted-copy">Resource tag gate</span>
