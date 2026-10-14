@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -29,6 +29,7 @@ import {
   Search,
   Send,
   Server,
+  Settings,
   Sparkles,
   Sun,
   Tag,
@@ -69,6 +70,7 @@ const navItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, badge: "1" },
   { id: "resources", label: "Resources", icon: Server },
   { id: "advisor", label: "AI Advisor", icon: Sparkles },
+  { id: "settings", label: "Settings", icon: Settings },
 ];
 
 function LogoMark() {
@@ -1029,6 +1031,12 @@ const suggestedPrompts = [
 
 function AdvisorView({ messages, isTyping, onAsk }) {
   const [input, setInput] = useState("");
+  const messagesRef = useRef(null);
+
+  useEffect(() => {
+    const el = messagesRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages, isTyping]);
   const send = (value = input) => {
     if (!value.trim()) return;
     onAsk(value.trim());
@@ -1059,7 +1067,7 @@ function AdvisorView({ messages, isTyping, onAsk }) {
           </div>
           <span className="online-dot">Live demo</span>
         </div>
-        <div className="chat-messages">
+        <div className="chat-messages" ref={messagesRef}>
           {messages.length === 0 && (
             <div className="chat-welcome">
               <div className="welcome-orb">
@@ -1126,6 +1134,87 @@ function AdvisorView({ messages, isTyping, onAsk }) {
         <p className="read-only-disclaimer">
           <CircleHelp size={13} /> The advisor is read-only. It won’t make changes to your AWS account.
         </p>
+      </Card>
+    </div>
+  );
+}
+
+function SettingsView({ metrics, onBudgetChange, darkMode, onToggleTheme }) {
+  const [budgetInput, setBudgetInput] = useState(String(metrics.budget ?? 10));
+
+  const saveBudget = () => {
+    const value = Number(budgetInput);
+    if (!Number.isFinite(value) || value <= 0) {
+      toast.error("Enter a budget greater than 0");
+      return;
+    }
+    onBudgetChange(value);
+    toast.success(`Monthly budget set to ${formatUsd(value)}`);
+  };
+
+  return (
+    <div className="page-stack settings-page" data-testid="settings-view">
+      <div className="page-intro">
+        <div>
+          <p className="eyebrow">WORKSPACE / SETTINGS</p>
+          <h1 data-testid="settings-title">Settings</h1>
+          <p className="page-subtitle">Workspace details and preferences for this dashboard.</p>
+        </div>
+      </div>
+      <Card className="settings-card" testId="settings-workspace-card">
+        <h2 className="section-title">Workspace</h2>
+        <div className="settings-row">
+          <span className="muted-copy">AWS account</span>
+          <code>603831738297</code>
+        </div>
+        <div className="settings-row">
+          <span className="muted-copy">Primary region</span>
+          <code>ap-south-1 (Mumbai)</code>
+        </div>
+        <div className="settings-row">
+          <span className="muted-copy">AI advisor (Lex) region</span>
+          <code>ap-southeast-1 (Singapore)</code>
+        </div>
+        <div className="settings-row">
+          <span className="muted-copy">API endpoint</span>
+          <code>{import.meta.env.VITE_API_URL || "Not configured"}</code>
+        </div>
+        <div className="settings-row">
+          <span className="muted-copy">Resource tag gate</span>
+          <code>Project = costopt</code>
+        </div>
+      </Card>
+      <Card className="settings-card" testId="settings-preferences-card">
+        <h2 className="section-title">Preferences</h2>
+        <div className="settings-row">
+          <div>
+            <strong>Monthly budget</strong>
+            <p className="muted-copy">Used by the sidebar, forecast, and savings views.</p>
+          </div>
+          <div className="settings-budget-form">
+            <Input
+              type="number"
+              min="1"
+              step="1"
+              value={budgetInput}
+              onChange={(event) => setBudgetInput(event.target.value)}
+              aria-label="Monthly budget in USD"
+              data-testid="settings-budget-input"
+            />
+            <Button onClick={saveBudget} data-testid="settings-budget-save">
+              Save
+            </Button>
+          </div>
+        </div>
+        <div className="settings-row">
+          <div>
+            <strong>Theme</strong>
+            <p className="muted-copy">Currently {darkMode ? "dark" : "light"}.</p>
+          </div>
+          <Button variant="outline" onClick={onToggleTheme} data-testid="settings-theme-toggle">
+            {darkMode ? "Switch to light" : "Switch to dark"}
+          </Button>
+        </div>
       </Card>
     </div>
   );
@@ -1630,6 +1719,16 @@ export default function Home() {
               messages={messages}
               isTyping={isTyping}
               onAsk={askAdvisor}
+            />
+          )}
+          {activeView === "settings" && (
+            <SettingsView
+              metrics={metrics}
+              onBudgetChange={(value) =>
+                setMetrics((current) => ({ ...current, budget: value }))
+              }
+              darkMode={darkMode}
+              onToggleTheme={() => setDarkMode((value) => !value)}
             />
           )}
         </main>

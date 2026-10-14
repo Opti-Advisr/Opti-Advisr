@@ -2887,6 +2887,9 @@
 .advisor-page {
   max-width: 1040px;
   margin: 0 auto;
+  width: 100%;
+  height: calc(100dvh - 142px);
+  min-height: 0;
 }
 .advisor-page-badge {
   display: flex;
@@ -2897,7 +2900,8 @@
   font-weight: 500;
 }
 .chat-card {
-  min-height: 650px;
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -2932,7 +2936,8 @@
 }
 .chat-messages {
   flex: 1;
-  min-height: 330px;
+  min-height: 0;
+  overflow-y: auto;
   padding: 26px 24px;
 }
 .chat-welcome {
@@ -4052,4 +4057,33 @@
       --shimmer-text-fill: initial;
     }
   }
+}
+
+/* Settings view */
+.settings-page {
+  max-width: 1040px;
+  margin: 0 auto;
+  width: 100%;
+}
+.settings-card {
+  padding: 24px;
+  display: grid;
+  gap: 14px;
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.settings-row code {
+  font-size: 12px;
+}
+.settings-budget-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.settings-budget-form input {
+  max-width: 140px;
 }
