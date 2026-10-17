@@ -2,10 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   AlertTriangle,
-  ArrowDownRight,
   ArrowUpRight,
   BarChart3,
-  Bot,
   CalendarDays,
   ChevronDown,
   CircleHelp,
@@ -16,16 +14,13 @@ import {
   Grid2X2,
   HardDrive,
   LayoutDashboard,
-  LifeBuoy,
   ListFilter,
   Menu,
-  MessageCircle,
   Moon,
   MoreHorizontal,
   PanelLeftClose,
   PanelLeftOpen,
   Plus,
-  RefreshCw,
   Search,
   Send,
   Server,
@@ -304,6 +299,9 @@ function MetricCard({ label, value, detail, badge, icon: Icon, tone = "blue", te
 
 function SpendTrendCard({ trend, totalSpend }) {
   const currentTotal = totalSpend !== undefined ? totalSpend : 26.48;
+  const hasPrevious = trend.some(
+    (p) => Number.isFinite(p.previous_period) && p.previous_period > 0
+  );
   return (
     <Card className="trend-card" testId="spend-trend-card">
       <SectionHeading
@@ -315,10 +313,12 @@ function SpendTrendCard({ trend, totalSpend }) {
               <i className="legend-dot blue" />
               This period
             </span>
-            <span>
-              <i className="legend-dot gray" />
-              Previous period
-            </span>
+            {hasPrevious && (
+              <span>
+                <i className="legend-dot gray" />
+                Previous period
+              </span>
+            )}
           </div>
         }
       />
@@ -365,15 +365,17 @@ function SpendTrendCard({ trend, totalSpend }) {
               fill="url(#spendFill)"
               name="This period"
             />
-            <Line
-              type="monotone"
-              dataKey="previous_period"
-              stroke="#a9b4c5"
-              strokeWidth={2}
-              strokeDasharray="5 5"
-              dot={false}
-              name="Previous period"
-            />
+            {hasPrevious && (
+              <Line
+                type="monotone"
+                dataKey="previous_period"
+                stroke="#a9b4c5"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                dot={false}
+                name="Previous period"
+              />
+            )}
           </AreaChart>
         </ResponsiveContainer>
       </div>
@@ -739,6 +741,22 @@ function AdvisorCard({ onAsk, onNavigate }) {
   );
 }
 
+function LoadingSkeleton() {
+  return (
+    <div className="page-stack" data-testid="loading-skeleton">
+      <div className="skeleton skeleton-title" />
+      <div className="skeleton skeleton-subtitle" />
+      <div className="skeleton-grid">
+        <div className="skeleton skeleton-card" />
+        <div className="skeleton skeleton-card" />
+        <div className="skeleton skeleton-card" />
+        <div className="skeleton skeleton-card" />
+      </div>
+      <div className="skeleton skeleton-wide" />
+    </div>
+  );
+}
+
 function Dashboard({ metrics, trend, services, onAsk, hiddenSections = [], query = "", onNavigate }) {
   return (
     <div className="page-stack" data-testid="dashboard-view">
@@ -1065,7 +1083,7 @@ function AdvisorView({ messages, isTyping, onAsk }) {
               <span>Cost intelligence assistant</span>
             </div>
           </div>
-          <span className="online-dot">Live demo</span>
+          <span className="online-dot">AI Assistant</span>
         </div>
         <div className="chat-messages" ref={messagesRef}>
           {messages.length === 0 && (
@@ -1388,6 +1406,8 @@ export default function Home() {
   const [darkMode, setDarkMode] = useState(true);
   const [widgetOpen, setWidgetOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [costsReady, setCostsReady] = useState(false);
+  const [resourcesReady, setResourcesReady] = useState(false);
   const [terminateTarget, setTerminateTarget] = useState(null);
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -1490,7 +1510,8 @@ export default function Home() {
       })
       .catch((err) => {
         console.warn("Could not load AWS costs:", err);
-      });
+      })
+      .finally(() => setCostsReady(true));
   }, [rangePreset, granularity]);
 
   useEffect(() => {
@@ -1548,7 +1569,8 @@ export default function Home() {
       })
       .catch((err) => {
         console.warn("Could not load AWS resources:", err);
-      });
+      })
+      .finally(() => setResourcesReady(true));
   }, []);
 
   const handleStateChange = async (resource) => {
@@ -1695,25 +1717,31 @@ export default function Home() {
           onExport={handleExport}
         />
         <main className="main-content">
-          {activeView === "dashboard" && (
-            <Dashboard
-              metrics={metrics}
-              trend={trend}
-              services={services}
-              onAsk={askAdvisor}
-              hiddenSections={hiddenSections}
-              query={searchQuery}
-              onNavigate={setActiveView}
-            />
-          )}
-          {activeView === "resources" && (
-            <ResourcesView
-              resources={resources}
-              onStateChange={handleStateChange}
-              onTerminate={setTerminateTarget}
-              query={searchQuery}
-            />
-          )}
+          {activeView === "dashboard" &&
+            (costsReady ? (
+              <Dashboard
+                metrics={metrics}
+                trend={trend}
+                services={services}
+                onAsk={askAdvisor}
+                hiddenSections={hiddenSections}
+                query={searchQuery}
+                onNavigate={setActiveView}
+              />
+            ) : (
+              <LoadingSkeleton />
+            ))}
+          {activeView === "resources" &&
+            (resourcesReady ? (
+              <ResourcesView
+                resources={resources}
+                onStateChange={handleStateChange}
+                onTerminate={setTerminateTarget}
+                query={searchQuery}
+              />
+            ) : (
+              <LoadingSkeleton />
+            ))}
           {activeView === "advisor" && (
             <AdvisorView
               messages={messages}
