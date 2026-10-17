@@ -219,6 +219,29 @@ curl -X POST https://<api-id>.execute-api.ap-south-1.amazonaws.com/v1/costs \
 
 ---
 
+## Future Enhancements
+
+Ideas for where Opti Advisr can go next, grouped by theme.
+
+### Cost intelligence
+- **Real budget management** — create/edit budgets with threshold alerts, plus budget history and breach notifications.
+- **Anomaly detection** — automatic alerts on unusual spend spikes, instead of only asking the advisor.
+- **Savings Plans / Reserved Instance analyzer** — coverage tracking and purchase recommendations.
+
+### Resource optimization
+- **CloudWatch-backed rightsizing** — real CPU/memory utilization data driving stop/downsize recommendations (current idle detection is heuristic-based).
+- **Auto-scheduling** — start/stop dev instances on nights/weekends automatically, using the existing resource actions API.
+- **Tag-based cost allocation** — team/project showback and untagged-spend tracking.
+
+### Platform
+- **Audit log** — record who started/stopped/terminated what and when (matters now that resource actions are real).
+- **Notifications center** — a working notification bell wired to budget breaches and anomaly alerts.
+- **Scheduled reports** — weekly cost summary emails.
+- **Multi-account support** — AWS Organizations rollup for teams running several accounts.
+- **Advisor upgrades** — render markdown replies properly, persist chat history, and let suggested actions execute with confirmation.
+
+---
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for branch workflow, commit conventions, and pull request guidelines.
