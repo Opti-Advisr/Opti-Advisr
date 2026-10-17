@@ -92,16 +92,17 @@ cd frontend
 cp .env.example .env.local
 ```
 
-Edit `.env.local` with your actual values:
+Edit `.env.local` with your actual values (used by the Vite dev server proxy only):
 
 ```env
-# For Vite dev server proxy
 API_BASE_URL=https://<your-api-id>.execute-api.ap-south-1.amazonaws.com/v1
 API_KEY=<your-api-key>
+```
 
-# For production builds (baked into the bundle)
-VITE_API_URL=https://<your-api-id>.execute-api.ap-south-1.amazonaws.com/v1
-VITE_API_KEY=<your-api-key>
+Production needs no build-time variables: the frontend calls same-origin `/api` and the Cloudflare Worker (`frontend/worker.js`) injects the API key from its `API_KEY` secret. Set it with:
+
+```bash
+npx wrangler secret put API_KEY
 ```
 
 ### 4. Run Locally

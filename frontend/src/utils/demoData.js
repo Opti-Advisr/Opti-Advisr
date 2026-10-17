@@ -55,20 +55,6 @@ export const DEMO_RESOURCES = [
   { id: 'backups-bucket', name: 'backups-bucket', resource_id: 's3://backups-bucket', kind: 'S3', size: 'Standard-IA', state: 'available', monthly_savings: 0 },
 ];
 
-export const SUGGESTED_PROMPTS = [
-  'Which resources can I stop to save money?',
-  'Why did costs go up this week?',
-  'How am I tracking against budget?',
-];
-
-export const WIDGETS = [
-  { title: 'Cost by Service', description: 'Break down spend across AWS services.', tag: '#Costs', tone: 'blue' },
-  { title: 'Daily Spend Trend', description: 'Track spend movement across the week.', tag: '#Costs', tone: 'purple' },
-  { title: 'Idle Resource Finder', description: 'Find running instances with low CPU you can stop.', tag: '#Savings', tone: 'orange' },
-  { title: 'Budget Tracker', description: 'Month-to-date spend against your $10 budget.', tag: '#Budgets', tone: 'green' },
-  { title: 'Usage Forecast', description: 'Estimate month-end spend from current daily trends.', tag: '#Forecasts', tone: 'blue' },
-];
-
 export function formatUsd(value) {
   const num = Number(value);
   if (!Number.isFinite(num) || num === 0) return "$0.00";

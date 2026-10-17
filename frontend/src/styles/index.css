@@ -2182,25 +2182,6 @@
   color: var(--blue);
   font-size: 22px;
 }
-.demo-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  color: #a16207;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-  font-size: 10px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-.demo-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #f59e0b;
-}
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3087,40 +3068,6 @@
   font-size: 9px;
   padding: 14px 0 20px;
 }
-.placeholder-card {
-  min-height: 330px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 32px;
-}
-.placeholder-icon {
-  width: 52px;
-  height: 52px;
-  display: grid;
-  place-items: center;
-  border-radius: 14px;
-  color: var(--blue);
-  background: var(--blue-soft);
-}
-.placeholder-card h2 {
-  color: var(--ink);
-  font-size: 17px;
-  margin: 17px 0 7px;
-}
-.placeholder-card p {
-  color: var(--muted);
-  font-size: 11px;
-  max-width: 320px;
-  line-height: 1.6;
-  margin: 0 0 18px;
-}
-.placeholder-card button {
-  font-size: 11px;
-  border-radius: 7px;
-}
 .drawer-backdrop, .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -3625,9 +3572,6 @@
   }
   .page-intro h1 {
     font-size: 22px;
-  }
-  .page-intro .demo-badge {
-    align-self: flex-start;
   }
   .metrics-grid {
     grid-template-columns: repeat(2, 1fr);
