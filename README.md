@@ -4,6 +4,8 @@
 
 An interactive dashboard that helps teams visualise AWS spend, manage cloud resources, and get AI-driven cost-optimisation recommendations, all running on a fully serverless stack.
 
+**Read the story:** [We Built an AWS Cost Dashboard That Catches Idle Resources Before They Drain Your Wallet](https://medium.com/@isthatabbhi/we-built-an-aws-cost-dashboard-that-catches-idle-resources-before-they-drain-your-wallet-f9708b761639)
+
 ---
 
 ## Architecture
