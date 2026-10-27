@@ -1,7 +1,7 @@
 // Opti Advisr Worker: serves the static site and proxies /api/* calls to
 // API Gateway, injecting the API key from the API_KEY secret so the key
 // never ships in the browser bundle.
-const API_ORIGIN = "https://inib931b1c.execute-api.ap-south-1.amazonaws.com/v1";
+const API_ORIGIN = "https://7wn6xhals4.execute-api.ap-south-1.amazonaws.com/v1";
 
 // Assets uploaded through the API can be stored with a generic content
 // type, which makes browsers download pages instead of rendering them.
