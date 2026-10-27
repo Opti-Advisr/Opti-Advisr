@@ -2682,6 +2682,9 @@
   padding: 9px 11px;
   border-radius: 4px 10px 10px 10px;
   font-size: 10px;
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: break-word;
 }
 .advisor-answer p {
   margin: 0;
@@ -2691,6 +2694,9 @@
   border-radius: 10px 4px 10px 10px;
   font-size: 10px;
   line-height: 1.55;
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: break-word;
 }
 .advisor-answer p strong {
   color: var(--ink);
@@ -3453,14 +3459,18 @@
     grid-template-columns: repeat(2, 1fr);
   }
   .dashboard-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dashboard-grid > *,
+  .dashboard-side-stack > * {
+    min-width: 0;
   }
   .dashboard-side-stack {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .dashboard-grid-bottom {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .advisor-card {
     min-height: auto;
@@ -3605,14 +3615,28 @@
     margin-right: 3px;
   }
   .dashboard-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .dashboard-grid-bottom {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .dashboard-side-stack {
     display: flex;
     flex-direction: column;
+  }
+  /* Mobile: stack the resource stats instead of squeezing 3 across */
+  .resource-stat-list {
+    grid-template-columns: 1fr;
+  }
+  /* Mobile: let the services table fit the card instead of scrolling off-screen */
+  .services-table {
+    min-width: 0;
+  }
+  .services-table td:first-child {
+    white-space: normal;
+  }
+  .share-track {
+    display: none;
   }
   .trend-card, .weekday-card, .savings-card, .resource-summary-card, .services-card, .advisor-card {
     padding: 14px;
