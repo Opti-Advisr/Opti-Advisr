@@ -195,7 +195,7 @@ function Sidebar({ activeView, onNavigate, collapsed, onToggle, mobileOpen = fal
   );
 }
 
-function Topbar({ onOpenWidgets, darkMode, onToggleTheme, onSearch, onToggleMobile, rangeLabel, onCycleRange, granularityLabel, onCycleGranularity, onExport }) {
+function Topbar({ onOpenWidgets, darkMode, onToggleTheme, onSearch, onToggleMobile, rangeLabel, onCycleRange, onSelectPreset, onSelectCustomRange, granularityLabel, onCycleGranularity, onExport }) {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
@@ -208,6 +208,52 @@ function Topbar({ onOpenWidgets, darkMode, onToggleTheme, onSearch, onToggleMobi
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+  const [pendingStart, setPendingStart] = useState(null);
+  const calendarRef = useRef(null);
+  useEffect(() => {
+    if (!calendarOpen) return;
+    const handler = (event) => {
+      if (calendarRef.current && !calendarRef.current.contains(event.target)) {
+        setCalendarOpen(false);
+        setPendingStart(null);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [calendarOpen]);
+  const isoLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const sameDay = (a, b) => a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  const todayMidnight = (() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  })();
+  const calYear = calendarMonth.getFullYear();
+  const calMonth = calendarMonth.getMonth();
+  const calDays = new Date(calYear, calMonth + 1, 0).getDate();
+  const calOffset = new Date(calYear, calMonth, 1).getDay();
+  const calCells = [...Array(calOffset).fill(null), ...Array.from({ length: calDays }, (_, i) => new Date(calYear, calMonth, i + 1))];
+  const calLabel = calendarMonth.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+  const handleDayClick = (day) => {
+    if (day > todayMidnight) return;
+    if (!pendingStart) {
+      setPendingStart(day);
+      return;
+    }
+    if (day < pendingStart) {
+      setPendingStart(day);
+      return;
+    }
+    const label = `${pendingStart.toLocaleDateString("en-GB")} - ${day.toLocaleDateString("en-GB")}`;
+    const days = Math.round((day - pendingStart) / 86400000) + 1;
+    onSelectCustomRange({ start: isoLocal(pendingStart), end: isoLocal(day), label, days });
+    setCalendarOpen(false);
+    setPendingStart(null);
+  };
   return (
     <header className="topbar" data-testid="top-navbar">
       <button
@@ -234,11 +280,51 @@ function Topbar({ onOpenWidgets, darkMode, onToggleTheme, onSearch, onToggleMobi
         <kbd>⌘K</kbd>
       </div>
       <div className="topbar-controls">
-        <button className="date-control" onClick={onCycleRange} data-testid="date-range-control">
-          <CalendarDays size={15} />
-          <span>{rangeLabel}</span>
-          <ChevronDown size={14} />
-        </button>
+        <div ref={calendarRef} style={{ position: "relative" }}>
+          <button className="date-control" onClick={() => { setCalendarOpen((open) => !open); setPendingStart(null); const now = new Date(); setCalendarMonth(new Date(now.getFullYear(), now.getMonth(), 1)); }} data-testid="date-range-control">
+            <CalendarDays size={15} />
+            <span>{rangeLabel}</span>
+            <ChevronDown size={14} />
+          </button>
+          {calendarOpen && (
+            <div data-testid="calendar-popup" style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 100, width: 288, background: "var(--page)", color: "var(--ink)", border: "1px solid var(--line)", borderRadius: 12, padding: 12, boxShadow: "0 12px 32px rgba(0, 0, 0, 0.25)" }}>
+              <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                {[["mtd", "MTD"], ["7d", "7D"], ["30d", "30D"], ["90d", "90D"]].map(([preset, label]) => (
+                  <button key={preset} type="button" onClick={() => { onSelectPreset(preset); setCalendarOpen(false); setPendingStart(null); }} style={{ flex: 1, padding: "6px 0", borderRadius: 8, border: "1px solid var(--line)", background: "transparent", color: "var(--ink)", cursor: "pointer", fontSize: 12 }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                <button type="button" onClick={() => setCalendarMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))} style={{ padding: "4px 10px", borderRadius: 8, border: "1px solid var(--line)", background: "transparent", color: "var(--ink)", cursor: "pointer" }}>‹</button>
+                <strong style={{ fontSize: 13 }}>{calLabel}</strong>
+                <button type="button" onClick={() => setCalendarMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))} style={{ padding: "4px 10px", borderRadius: 8, border: "1px solid var(--line)", background: "transparent", color: "var(--ink)", cursor: "pointer" }}>›</button>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
+                {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
+                  <div key={d} style={{ textAlign: "center", fontSize: 11, opacity: 0.6 }}>{d}</div>
+                ))}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
+                {calCells.map((day, idx) => {
+                  if (day === null) return <div key={`blank-${idx}`} />;
+                  const isFuture = day > todayMidnight;
+                  const isPending = sameDay(day, pendingStart);
+                  const isToday = sameDay(day, todayMidnight);
+                  return (
+                    <button key={isoLocal(day)} type="button" disabled={isFuture} onClick={() => handleDayClick(day)} style={{ padding: "6px 0", borderRadius: 8, border: isToday ? "1px solid var(--blue)" : "1px solid transparent", background: isPending ? "var(--blue)" : "transparent", color: isPending ? "#fff" : "var(--ink)", opacity: isFuture ? 0.35 : 1, cursor: isFuture ? "default" : "pointer", fontSize: 12 }}>
+                      {day.getDate()}
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
+                <span style={{ fontSize: 11, opacity: 0.7 }}>{pendingStart ? "Select end date" : "Select start date, then end date"}</span>
+                <button type="button" onClick={() => { setCalendarOpen(false); setPendingStart(null); }} style={{ padding: "4px 10px", borderRadius: 8, border: "1px solid var(--line)", background: "transparent", color: "var(--ink)", cursor: "pointer", fontSize: 12 }}>Cancel</button>
+              </div>
+            </div>
+          )}
+        </div>
         <button className="granularity-control" onClick={onCycleGranularity} data-testid="granularity-control">
           {granularityLabel} <ChevronDown size={14} />
         </button>
@@ -1421,8 +1507,10 @@ export default function Home() {
   const RANGE_ORDER = ["mtd", "7d", "30d", "90d"];
   const [rangePreset, setRangePreset] = useState("mtd");
   const [granularity, setGranularity] = useState("DAILY");
+  const [customRange, setCustomRange] = useState(null);
 
   const rangeFor = (preset) => {
+    if (preset === "custom" && customRange) return customRange;
     const end = new Date();
     const start = new Date(end);
     if (preset === "mtd") start.setDate(1);
@@ -1514,7 +1602,7 @@ export default function Home() {
         console.warn("Could not load AWS costs:", err);
       })
       .finally(() => setCostsReady(true));
-  }, [rangePreset, granularity]);
+  }, [rangePreset, granularity, customRange]);
 
   useEffect(() => {
     apiGet("/resources")
@@ -1713,6 +1801,14 @@ export default function Home() {
               (current) => RANGE_ORDER[(RANGE_ORDER.indexOf(current) + 1) % RANGE_ORDER.length]
             )
           }
+          onSelectPreset={(preset) => {
+            setRangePreset(preset);
+            setCustomRange(null);
+          }}
+          onSelectCustomRange={(range) => {
+            setCustomRange(range);
+            setRangePreset("custom");
+          }}
           granularityLabel={granularity === "DAILY" ? "Daily" : "Monthly"}
           onCycleGranularity={() =>
             setGranularity((current) => (current === "DAILY" ? "MONTHLY" : "DAILY"))
