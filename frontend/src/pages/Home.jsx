@@ -1024,13 +1024,13 @@ function ResourcesView({ resources, onStateChange, onTerminate, query = "" }) {
                   </td>
                   <td>
                     <div className="resource-actions">
-                      {resource.kind === "EC2" && (
+                      {(resource.kind === "EC2" || resource.kind === "RDS") && (
                         <button
                           className="small-action"
                           onClick={() => onStateChange(resource)}
                           data-testid={`resource-${resource.id}-toggle-button`}
                         >
-                          {resource.state === "running" ? "Stop" : "Start"}
+                          {((resource.kind === "EC2" && resource.state === "running") || (resource.kind === "RDS" && resource.state === "available")) ? "Stop" : "Start"}
                         </button>
                       )}
                       {resource.kind === "EC2" && (
@@ -1042,7 +1042,7 @@ function ResourcesView({ resources, onStateChange, onTerminate, query = "" }) {
                           <Trash2 size={13} /> Terminate
                         </button>
                       )}
-                      {resource.kind !== "EC2" && (
+                      {resource.kind === "S3" && (
                         <span className="muted-copy">—</span>
                       )}
                     </div>
@@ -1669,8 +1669,10 @@ export default function Home() {
   }, []);
 
   const handleStateChange = async (resource) => {
-    const nextState = resource.state === "running" ? "stopped" : "running";
-    const action = nextState === "running" ? "start" : "stop";
+    const isRds = resource.kind === "RDS";
+    const runningState = isRds ? "available" : "running";
+    const nextState = resource.state === runningState ? "stopped" : runningState;
+    const action = nextState === runningState ? "start" : "stop";
     try {
       await apiPost("/resources", {
         action,
