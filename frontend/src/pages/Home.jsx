@@ -765,11 +765,6 @@ function Dashboard({ metrics, trend, services, onAsk, hiddenSections = [], query
           <p className="eyebrow">OVERVIEW / OCTOBER 2026</p>
           <h1 data-testid="dashboard-title">
             Cloud Cost Dashboard <span className="wave">✦</span>
-            {usingDemoFigures && (
-              <span style={{ fontSize: 12, fontWeight: 400, marginLeft: 8, opacity: 0.7 }}>
-                Demo figures
-              </span>
-            )}
           </h1>
           <p className="page-subtitle">Here’s what’s happening with your cloud spend across AWS services.</p>
         </div>
