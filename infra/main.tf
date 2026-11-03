@@ -224,7 +224,6 @@ resource "aws_iam_role_policy" "resource_manager" {
         Resource = "*"
       },
       {
-        # Mutating EC2 actions only on resources tagged Project=costopt.
         Effect = "Allow"
         Action = [
           "ec2:StartInstances",
@@ -232,25 +231,14 @@ resource "aws_iam_role_policy" "resource_manager" {
           "ec2:TerminateInstances"
         ]
         Resource = "*"
-        Condition = {
-          StringEquals = {
-            "aws:ResourceTag/Project" = "costopt"
-          }
-        }
       },
       {
-        # Mutating RDS actions only on resources tagged Project=costopt.
         Effect = "Allow"
         Action = [
           "rds:StartDBInstance",
           "rds:StopDBInstance"
         ]
         Resource = "*"
-        Condition = {
-          StringEquals = {
-            "aws:ResourceTag/Project" = "costopt"
-          }
-        }
       },
       {
         Effect   = "Allow"

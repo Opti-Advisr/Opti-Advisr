@@ -11,9 +11,6 @@ CORS_HEADERS = {
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
 }
 
-TAG_KEY = os.environ.get("RESOURCE_TAG_KEY", "Project")
-TAG_VALUE = os.environ.get("RESOURCE_TAG_VALUE", "costopt")
-
 # Frontend uses resource_type values ec2/rds/s3; the API contract uses
 # type=ec2|rds|s3 on GET and service on POST. Both are accepted.
 TYPE_ALIASES = {
@@ -54,10 +51,6 @@ def _tag_value(tags, key):
     return None
 
 
-def _has_project_tag(tags):
-    return _tag_value(tags, TAG_KEY) == TAG_VALUE
-
-
 def _is_idle_ec2(cloudwatch, instance_id):
     """Idle candidate: average CPU under 5% across the last 7 days."""
     try:
@@ -81,9 +74,7 @@ def _is_idle_ec2(cloudwatch, instance_id):
 def _list_ec2(region, cloudwatch):
     ec2 = boto3.client("ec2", region_name=region)
     items = []
-    response = ec2.describe_instances(
-        Filters=[{"Name": f"tag:{TAG_KEY}", "Values": [TAG_VALUE]}]
-    )
+    response = ec2.describe_instances()
     for reservation in response.get("Reservations", []):
         for instance in reservation.get("Instances", []):
             tags = instance.get("Tags", [])
@@ -110,8 +101,6 @@ def _list_rds(region):
         except Exception:
             tag_list = []
         tags = [{"Key": t.get("Key"), "Value": t.get("Value")} for t in tag_list]
-        if not _has_project_tag(tags):
-            continue
         items.append({
             "id": db.get("DBInstanceIdentifier"),
             "name": db.get("DBInstanceIdentifier"),
@@ -135,8 +124,6 @@ def _list_s3():
             tags = [{"Key": t.get("Key"), "Value": t.get("Value")} for t in tagging.get("TagSet", [])]
         except Exception:
             tags = []
-        if not _has_project_tag(tags):
-            continue
         items.append({
             "id": name,
             "name": name,
@@ -146,24 +133,6 @@ def _list_s3():
             "tags": tags,
         })
     return items
-
-
-def _check_ec2_tag(ec2, resource_id):
-    response = ec2.describe_instances(InstanceIds=[resource_id])
-    for reservation in response.get("Reservations", []):
-        for instance in reservation.get("Instances", []):
-            return _has_project_tag(instance.get("Tags", []))
-    return False
-
-
-def _check_rds_tag(rds, resource_id):
-    response = rds.describe_db_instances(DBInstanceIdentifier=resource_id)
-    for db in response.get("DBInstances", []):
-        tag_list = rds.list_tags_for_resource(ResourceName=db.get("DBInstanceArn", "")).get("TagList", [])
-        tags = [{"Key": t.get("Key"), "Value": t.get("Value")} for t in tag_list]
-        if _has_project_tag(tags):
-            return True
-    return False
 
 
 def _handle_action(region, body):
@@ -182,8 +151,6 @@ def _handle_action(region, body):
     try:
         if resource_type == "ec2":
             ec2 = boto3.client("ec2", region_name=region)
-            if not _check_ec2_tag(ec2, resource_id):
-                return _error(403, f"Resource {resource_id} is not tagged {TAG_KEY}={TAG_VALUE}; action refused")
             if action == "start":
                 ec2.start_instances(InstanceIds=[resource_id])
                 new_state = "pending"
@@ -197,8 +164,6 @@ def _handle_action(region, body):
                 return _error(400, f"Unsupported action for ec2: {action}")
         elif resource_type == "rds":
             rds = boto3.client("rds", region_name=region)
-            if not _check_rds_tag(rds, resource_id):
-                return _error(403, f"Resource {resource_id} is not tagged {TAG_KEY}={TAG_VALUE}; action refused")
             if action == "start":
                 rds.start_db_instance(DBInstanceIdentifier=resource_id)
                 new_state = "starting"
