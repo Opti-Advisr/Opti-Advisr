@@ -765,6 +765,11 @@ function Dashboard({ metrics, trend, services, onAsk, hiddenSections = [], query
           <p className="eyebrow">OVERVIEW / OCTOBER 2026</p>
           <h1 data-testid="dashboard-title">
             Cloud Cost Dashboard <span className="wave">✦</span>
+            {usingDemoFigures && (
+              <span style={{ fontSize: 12, fontWeight: 400, marginLeft: 8, opacity: 0.7 }}>
+                Demo figures
+              </span>
+            )}
           </h1>
           <p className="page-subtitle">Here’s what’s happening with your cloud spend across AWS services.</p>
         </div>
@@ -1403,7 +1408,7 @@ export default function Home() {
   const [activeView, setActiveView] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
   const [widgetOpen, setWidgetOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [costsReady, setCostsReady] = useState(false);
@@ -1416,6 +1421,7 @@ export default function Home() {
   const [metrics, setMetrics] = useState(DEMO_METRICS);
   const [trend, setTrend] = useState(DEMO_TREND);
   const [services, setServices] = useState(DEMO_SERVICES);
+  const [usingDemoFigures, setUsingDemoFigures] = useState(true);
 
   const RANGE_ORDER = ["mtd", "7d", "30d", "90d"];
   const [rangePreset, setRangePreset] = useState("mtd");
@@ -1480,7 +1486,7 @@ export default function Home() {
           topName = sorted[0]?.service || "AWS Services";
           topCost = sorted[0]?.cost || 0;
           topShare = sorted[0]?.share || 0;
-          setServices(sorted);
+          if (amount > 0) setServices(sorted);
         }
 
         if (Array.isArray(data.results) && data.results.length > 0) {
@@ -1496,17 +1502,18 @@ export default function Home() {
               this_period: Number(total.toFixed(2)),
               previous_period: 0,
             }));
-          if (points.length > 0) setTrend(points);
+          if (points.length > 0 && amount > 0) setTrend(points);
         }
 
         setMetrics((current) => ({
           ...current,
-          total_spend: amount,
-          daily_average: amount / range.days,
-          top_service_name: topName,
-          top_service_cost: topCost,
-          top_service_share: topShare,
+          total_spend: amount > 0 ? amount : current.total_spend,
+          daily_average: amount > 0 ? amount / range.days : current.daily_average,
+          top_service_name: amount > 0 ? topName : current.top_service_name,
+          top_service_cost: amount > 0 ? topCost : current.top_service_cost,
+          top_service_share: amount > 0 ? topShare : current.top_service_share,
         }));
+        setUsingDemoFigures(amount <= 0);
       })
       .catch((err) => {
         console.warn("Could not load AWS costs:", err);
@@ -1638,6 +1645,7 @@ export default function Home() {
         reply = "Here are recommendations from your AWS AI Agent:\n\n• " + res.recommendations.join("\n\n• ");
       }
       if (!reply) throw new Error("Advisor response did not include advice");
+      reply = reply.replace(/\*\*/g, "");
       setMessages((curr) => [...curr, { role: "advisor", content: reply }]);
       setIsTyping(false);
     } catch (err) {
