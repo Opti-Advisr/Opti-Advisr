@@ -329,6 +329,7 @@ function Topbar({ onOpenWidgets, darkMode, onToggleTheme, onSearch, onToggleMobi
           {granularityLabel} <ChevronDown size={14} />
         </button>
         <div className="topbar-divider" />
+        <span data-testid="readonly-badge" style={{ fontSize: 12, padding: "6px 10px", borderRadius: 999, border: "1px solid var(--line)", opacity: 0.8, whiteSpace: "nowrap" }}>Read-only demo</span>
         <Button
           variant="outline"
           className="add-widget-button"
