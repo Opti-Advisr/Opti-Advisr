@@ -1033,13 +1033,18 @@ function ResourcesView({ resources, onStateChange, onTerminate, query = "" }) {
                           {resource.state === "running" ? "Stop" : "Start"}
                         </button>
                       )}
-                      <button
-                        className="terminate-action"
-                        onClick={() => onTerminate(resource)}
-                        data-testid={`resource-${resource.id}-terminate-button`}
-                      >
-                        <Trash2 size={13} /> Terminate
-                      </button>
+                      {resource.kind === "EC2" && (
+                        <button
+                          className="terminate-action"
+                          onClick={() => onTerminate(resource)}
+                          data-testid={`resource-${resource.id}-terminate-button`}
+                        >
+                          <Trash2 size={13} /> Terminate
+                        </button>
+                      )}
+                      {resource.kind !== "EC2" && (
+                        <span className="muted-copy">—</span>
+                      )}
                     </div>
                   </td>
                 </tr>
