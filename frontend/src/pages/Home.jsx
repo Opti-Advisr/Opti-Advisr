@@ -1138,7 +1138,7 @@ const suggestedPrompts = [
   "How am I tracking against budget?",
 ];
 
-function AdvisorView({ messages, isTyping, onAsk }) {
+function AdvisorView({ messages, isTyping, onAsk, advisorOnline, lastPrompt, onRetry }) {
   const [input, setInput] = useState("");
   const messagesRef = useRef(null);
 
@@ -1162,7 +1162,7 @@ function AdvisorView({ messages, isTyping, onAsk }) {
           </p>
         </div>
         <div className="advisor-page-badge">
-          <Orb small /> <span>Advisor online</span>
+          <Orb small /> <span>{advisorOnline ? "Advisor online" : "Advisor offline"}</span>
         </div>
       </div>
       <Card className="chat-card" testId="advisor-chat-card">
@@ -1174,7 +1174,7 @@ function AdvisorView({ messages, isTyping, onAsk }) {
               <span>Cost intelligence assistant</span>
             </div>
           </div>
-          <span className="online-dot">AI Assistant</span>
+          <span className={advisorOnline ? "online-dot" : undefined}>AI Assistant</span>
         </div>
         <div className="chat-messages" ref={messagesRef}>
           {messages.length === 0 && (
@@ -1215,6 +1215,13 @@ function AdvisorView({ messages, isTyping, onAsk }) {
             </div>
           )}
         </div>
+        {!advisorOnline && lastPrompt && (
+          <div style={{ padding: "0 12px 12px" }}>
+            <button type="button" onClick={onRetry} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--line)", background: "transparent", color: "var(--ink)", cursor: "pointer", fontSize: 13 }}>
+              Retry last question
+            </button>
+          </div>
+        )}
         <div className="suggested-prompts">
           {suggestedPrompts.map((prompt) => (
             <button
@@ -1491,7 +1498,12 @@ function WidgetDrawer({ onClose, hiddenSections, onSelectWidget, onQuickAsk }) {
 }
 
 export default function Home() {
-  const [activeView, setActiveView] = useState("dashboard");
+  const [activeView, setActiveView] = useState(() => {
+    const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
+    if (path === "" || path === "dashboard") return "dashboard";
+    if (path === "resources" || path === "advisor" || path === "settings") return path;
+    return "notfound";
+  });
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
@@ -1502,6 +1514,9 @@ export default function Home() {
   const [terminateTarget, setTerminateTarget] = useState(null);
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [advisorOnline, setAdvisorOnline] = useState(true);
+  const [lastPrompt, setLastPrompt] = useState("");
+  const advisorBusyRef = useRef(false);
 
   const [resources, setResources] = useState(DEMO_RESOURCES);
   const [metrics, setMetrics] = useState(DEMO_METRICS);
@@ -1513,6 +1528,23 @@ export default function Home() {
   const [rangePreset, setRangePreset] = useState("mtd");
   const [granularity, setGranularity] = useState("DAILY");
   const [customRange, setCustomRange] = useState(null);
+
+  useEffect(() => {
+    if (activeView !== "notfound") {
+      const desired = activeView === "dashboard" ? "/" : "/" + activeView;
+      if (window.location.pathname !== desired) window.history.pushState(null, "", desired);
+    }
+  }, [activeView]);
+  useEffect(() => {
+    const onPop = () => {
+      const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
+      if (path === "" || path === "dashboard") setActiveView("dashboard");
+      else if (path === "resources" || path === "advisor" || path === "settings") setActiveView(path);
+      else setActiveView("notfound");
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
   const rangeFor = (preset) => {
     if (preset === "custom" && customRange) return customRange;
@@ -1685,7 +1717,7 @@ export default function Home() {
         prev.map((r) => (r.id === resource.id ? { ...r, state: nextState } : r))
       );
     } catch (e) {
-      toast.error(`Action failed for ${resource.name}`);
+      toast.error(`Action failed for ${resource.name}: ${e && e.message ? e.message : "unknown error"}`);
     }
   };
 
@@ -1700,7 +1732,7 @@ export default function Home() {
       toast.success("Resource termination requested");
       setResources((prev) => prev.filter((r) => r.id !== resource.id));
     } catch (e) {
-      toast.error("Failed to terminate resource");
+      toast.error(`Failed to terminate resource: ${e && e.message ? e.message : "unknown error"}`);
     }
     setTerminateTarget(null);
   };
@@ -1716,20 +1748,27 @@ export default function Home() {
       .map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(","))
       .join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
+    link.href = url;
     link.download = "opti-advisr-export.csv";
+    document.body.appendChild(link);
     link.click();
-    URL.revokeObjectURL(link.href);
-    toast.success("Spend report exported");
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 500);
+    toast.success(`Spend report exported: opti-advisr-export.csv (${rows.length} rows)`);
   };
 
   const askAdvisor = async (prompt) => {
-    setMessages((curr) => [...curr, { role: "user", content: prompt }]);
+    if (!prompt || !prompt.trim()) return;
+    if (advisorBusyRef.current) return;
+    advisorBusyRef.current = true;
+    const cleanPrompt = prompt.trim();
+    setLastPrompt(cleanPrompt);
+    setMessages((curr) => [...curr, { role: "user", content: cleanPrompt }]);
     setIsTyping(true);
-
     try {
-      const res = await apiPost("/agent", { prompt });
+      const res = await apiPost("/agent", { prompt: cleanPrompt });
       let reply = res?.reply;
       if (!reply && Array.isArray(res?.recommendations) && res.recommendations.length > 0) {
         reply = "Here are recommendations from your AWS AI Agent:\n\n• " + res.recommendations.join("\n\n• ");
@@ -1737,16 +1776,23 @@ export default function Home() {
       if (!reply) throw new Error("Advisor response did not include advice");
       reply = reply.replace(/\*\*/g, "");
       setMessages((curr) => [...curr, { role: "advisor", content: reply }]);
-      setIsTyping(false);
+      setAdvisorOnline(true);
     } catch (err) {
+      const detail = err && err.message ? err.message : "network error";
+      setAdvisorOnline(false);
       setMessages((curr) => [
         ...curr,
         {
           role: "advisor",
-          content:
-            "I couldn't reach the AI advisor just now. Check your connection and try again in a moment.",
+          content: `I couldn't reach the AI advisor just now (${detail}). Tap Retry last question below to try again.`,
+        },
+        {
+          role: "advisor",
+          content: `While the advisor is offline, here is what your dashboard shows: Total spend ${formatUsd(metrics.total_spend)}, top service ${services.length > 0 ? services[0].service : "unknown"}, ${resources.length} resources. Check the Dashboard and Resources tabs for the latest live numbers.`,
         },
       ]);
+    } finally {
+      advisorBusyRef.current = false;
       setIsTyping(false);
     }
   };
@@ -1853,6 +1899,9 @@ export default function Home() {
               messages={messages}
               isTyping={isTyping}
               onAsk={askAdvisor}
+              advisorOnline={advisorOnline}
+              lastPrompt={lastPrompt}
+              onRetry={() => askAdvisor(lastPrompt)}
             />
           )}
           {activeView === "settings" && (
@@ -1864,6 +1913,13 @@ export default function Home() {
               darkMode={darkMode}
               onToggleTheme={() => setDarkMode((value) => !value)}
             />
+          )}
+          {activeView === "notfound" && (
+            <div className="page-stack" data-testid="notfound-view">
+              <h1>Page not found</h1>
+              <p>The page you opened does not exist. Go back to the Dashboard.</p>
+              <button type="button" onClick={() => setActiveView("dashboard")} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--line)", background: "transparent", color: "var(--ink)", cursor: "pointer" }}>Back to Dashboard</button>
+            </div>
           )}
         </main>
       </div>
