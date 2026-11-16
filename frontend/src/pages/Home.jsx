@@ -1626,11 +1626,27 @@ export default function Home() {
           setServices(sorted);
         }
 
+        // Real weekday aggregates from the daily breakdown. Weekday
+        // attribution only makes sense with daily data, so monthly
+        // granularity leaves the previous (daily-computed) values alone.
+        let liveWeekday = null;
+        if (granularity === "DAILY") {
+          liveWeekday = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
+            (day) => ({ day, amount: 0 })
+          );
+        }
         if (Array.isArray(data.results) && data.results.length > 0) {
           const byPeriod = new Map();
+          const byWeekday = [0, 0, 0, 0, 0, 0, 0]; // Mon..Sun
           for (const row of data.results) {
             const rowAmount = Math.max(0, Number(row.amount) || 0);
             byPeriod.set(row.period, (byPeriod.get(row.period) || 0) + rowAmount);
+            if (granularity === "DAILY") {
+              const d = new Date(`${row.period}T00:00:00`);
+              if (!Number.isNaN(d.getTime())) {
+                byWeekday[(d.getDay() + 6) % 7] += rowAmount;
+              }
+            }
           }
           const points = [...byPeriod.entries()]
             .sort(([a], [b]) => (a < b ? -1 : 1))
@@ -1640,6 +1656,11 @@ export default function Home() {
               previous_period: 0,
             }));
           if (points.length > 0) setTrend(points);
+          if (granularity === "DAILY") {
+            liveWeekday = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
+              (day, i) => ({ day, amount: Number(byWeekday[i].toFixed(2)) })
+            );
+          }
         }
 
         // Live data is live data, even when spend is $0: apply it as-is
@@ -1651,6 +1672,7 @@ export default function Home() {
           top_service_name: topName,
           top_service_cost: topCost,
           top_service_share: topShare,
+          ...(liveWeekday ? { weekday: liveWeekday } : {}),
         }));
         setUsingDemoFigures(false);
         setCostsError(false);
