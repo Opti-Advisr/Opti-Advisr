@@ -844,7 +844,7 @@ function LoadingSkeleton() {
   );
 }
 
-function Dashboard({ metrics, trend, services, onAsk, hiddenSections = [], query = "", onNavigate }) {
+function Dashboard({ metrics, trend, services, onAsk, hiddenSections = [], query = "", onNavigate, usingDemoFigures = false, costsError = false }) {
   return (
     <div className="page-stack" data-testid="dashboard-view">
       <div className="page-intro">
@@ -856,6 +856,21 @@ function Dashboard({ metrics, trend, services, onAsk, hiddenSections = [], query
           <p className="page-subtitle">Here’s what’s happening with your cloud spend across AWS services.</p>
         </div>
       </div>
+      {costsError && usingDemoFigures && (
+        <div className="data-note data-note-warning" data-testid="costs-unavailable-note">
+          Live AWS cost data is unavailable right now — the figures below are samples.
+        </div>
+      )}
+      {costsError && !usingDemoFigures && (
+        <div className="data-note data-note-warning" data-testid="costs-stale-note">
+          Live cost data couldn’t refresh — showing the last loaded figures.
+        </div>
+      )}
+      {!costsError && metrics.total_spend <= 0 && (
+        <div className="data-note" data-testid="no-spend-note">
+          No AWS spend recorded in this period.
+        </div>
+      )}
       <div className="metrics-grid">
         <MetricCard
           label="Total Spend"
@@ -1524,6 +1539,7 @@ export default function Home() {
   const [trend, setTrend] = useState(DEMO_TREND);
   const [services, setServices] = useState(DEMO_SERVICES);
   const [usingDemoFigures, setUsingDemoFigures] = useState(true);
+  const [costsError, setCostsError] = useState(false);
 
   const RANGE_ORDER = ["mtd", "7d", "30d", "90d"];
   const [rangePreset, setRangePreset] = useState("mtd");
@@ -1607,7 +1623,7 @@ export default function Home() {
           topName = sorted[0]?.service || "AWS Services";
           topCost = sorted[0]?.cost || 0;
           topShare = sorted[0]?.share || 0;
-          if (amount > 0) setServices(sorted);
+          setServices(sorted);
         }
 
         if (Array.isArray(data.results) && data.results.length > 0) {
@@ -1623,21 +1639,25 @@ export default function Home() {
               this_period: Number(total.toFixed(2)),
               previous_period: 0,
             }));
-          if (points.length > 0 && amount > 0) setTrend(points);
+          if (points.length > 0) setTrend(points);
         }
 
+        // Live data is live data, even when spend is $0: apply it as-is
+        // instead of falling back to demo figures.
         setMetrics((current) => ({
           ...current,
-          total_spend: amount > 0 ? amount : current.total_spend,
-          daily_average: amount > 0 ? amount / range.days : current.daily_average,
-          top_service_name: amount > 0 ? topName : current.top_service_name,
-          top_service_cost: amount > 0 ? topCost : current.top_service_cost,
-          top_service_share: amount > 0 ? topShare : current.top_service_share,
+          total_spend: amount,
+          daily_average: amount / range.days,
+          top_service_name: topName,
+          top_service_cost: topCost,
+          top_service_share: topShare,
         }));
-        setUsingDemoFigures(amount <= 0);
+        setUsingDemoFigures(false);
+        setCostsError(false);
       })
       .catch((err) => {
         console.warn("Could not load AWS costs:", err);
+        setCostsError(true);
       })
       .finally(() => setCostsReady(true));
   }, [rangePreset, granularity, customRange]);
@@ -1880,6 +1900,8 @@ export default function Home() {
                 hiddenSections={hiddenSections}
                 query={searchQuery}
                 onNavigate={setActiveView}
+                usingDemoFigures={usingDemoFigures}
+                costsError={costsError}
               />
             ) : (
               <LoadingSkeleton />

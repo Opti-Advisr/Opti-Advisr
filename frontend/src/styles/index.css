@@ -2178,6 +2178,63 @@
   color: var(--muted);
   font-size: 14px;
 }
+/* Honest-state note shown above the dashboard metrics */
+.data-note {
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--blue-soft);
+  border: 1px solid var(--line);
+}
+.data-note-warning {
+  color: #92400e;
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+/* Loading skeleton shown while the first API responses arrive */
+.skeleton {
+  border-radius: 12px;
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.12) 25%,
+    rgba(148, 163, 184, 0.24) 50%,
+    rgba(148, 163, 184, 0.12) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.2s infinite linear;
+}
+@keyframes skeleton-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+.skeleton-title {
+  height: 34px;
+  width: 280px;
+}
+.skeleton-subtitle {
+  height: 16px;
+  width: 420px;
+  margin-top: 10px;
+}
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 18px 0;
+}
+.skeleton-card {
+  height: 108px;
+}
+.skeleton-wide {
+  height: 280px;
+}
+@media (max-width: 900px) {
+  .skeleton-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 .wave {
   color: var(--blue);
   font-size: 22px;
